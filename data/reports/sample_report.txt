@@ -1,0 +1,49 @@
+CLINICAL DISCHARGE SUMMARY
+
+PATIENT DEMOGRAPHICS
+Patient Name: John Doe
+Date of Birth: 05/14/1974
+Gender: Male
+MRN: 948-204-11A
+Date of Admission: 08/01/2026
+Date of Discharge: 08/03/2026
+
+CHIEF COMPLAINT
+The patient presented to the Emergency Department with acute chest pain starting approximately two hours prior to admission, described as substernal pressure radiating to the left arm, rated 8/10 on pain scale, associated with mild diaphoresis and shortness of breath.
+
+HISTORY OF PRESENT ILLNESS
+Mr. Doe is a 52-year-old male with a history of hypertension who developed acute substernal chest discomfort while walking. He took one sublingual nitroglycerin with minimal relief. In the ED, his initial electrocardiogram (EKG) showed sinus rhythm with non-specific ST-segment and T-wave changes, but no acute ST-segment elevation. Initial troponin level was elevated at 0.08 ng/mL. He was started on an intravenous nitroglycerin drip and given aspirin 325 mg orally. He was admitted to the Cardiology Care Unit for further evaluation of suspected non-ST elevation myocardial infarction (NSTEMI).
+
+PAST MEDICAL HISTORY
+1. Essential Hypertension - diagnosed 5 years ago, treated with Lisinopril.
+2. Hyperlipidemia - untreated.
+3. Mild osteoarthritis.
+4. Family history of coronary artery disease (father had myocardial infarction at age 55).
+
+CURRENT MEDICATIONS & ALLERGIES
+Home Medications:
+- Lisinopril 20 mg daily.
+- Acetaminophen 500 mg as needed for joint pain.
+Allergies:
+- Penicillin (causes rash).
+
+PHYSICAL EXAMINATION
+Vitals: Temp 37.1 C, Heart Rate 78 bpm, Blood Pressure 138/82 mmHg, Respiratory Rate 16 bpm, O2 Saturation 98% on room air.
+General: Alert and oriented, in no acute distress.
+Cardiovascular: Regular rate and rhythm, normal S1 and S2, no murmurs, rubs, or gallops.
+Pulmonary: Lungs clear to auscultation bilaterally.
+Extremities: No pedal edema, warm and well perfused.
+
+DIAGNOSTICS & LAB RESULTS
+- EKG: Normal sinus rhythm with mild lateral T-wave inversions.
+- Cardiac Troponin I: Initial 0.08 ng/mL, 3-hour repeat 0.24 ng/mL, 6-hour repeat 0.42 ng/mL (highly elevated, confirming myocardial injury).
+- Basic Metabolic Panel (BMP): Sodium 139 mEq/L, Potassium 4.1 mEq/L, Creatinine 0.9 mg/dL (normal renal function).
+- Complete Blood Count (CBC): White Blood Cell count (WBC) 7.8 x10^3/uL, Hemoglobin 14.2 g/dL, Platelets 220 x10^3/uL.
+- Echocardiogram: Left ventricular ejection fraction (LVEF) of 50% with mild hypokinesis of the apical wall, no valvular abnormalities.
+
+ASSESSMENT & PLAN
+1. Acute Non-ST Elevation Myocardial Infarction (NSTEMI): Confirmed by cardiac enzymes trend. The patient underwent coronary angiography on 08/02/2026, which revealed a 75% stenosis in the mid-left anterior descending (LAD) coronary artery. A drug-eluting stent was successfully deployed with 0% residual stenosis. Post-procedure was uncomplicated.
+2. Hypertension: Stable, continue Lisinopril.
+3. Hyperlipidemia: Start Atorvastatin 40 mg daily at bedtime.
+4. Dual Antiplatelet Therapy (DAPT): Start Clopidogrel 75 mg daily in addition to Aspirin 81 mg daily for at least 12 months.
+5. Follow-up: Schedule outpatient cardiology visit in 2 weeks. Instructed to return to emergency department immediately for any recurrent chest pain or shortness of breath.

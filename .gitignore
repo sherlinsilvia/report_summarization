@@ -1,0 +1,30 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Generated session data & embeddings
+data/embeddings/*
+!data/embeddings/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Checkpoints & Model weights
+outputs/embeddings/*
+outputs/saved_models/*
+tmp_summarizer_checkpoints/
+*.bin
+*.safetensors
+*.pt
+*.pth
+
+# Environments
+.venv/
+env/
+venv/
+ENV/
+
+# System files
+.DS_Store
+Thumbs.db

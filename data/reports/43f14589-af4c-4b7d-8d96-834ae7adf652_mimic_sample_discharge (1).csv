@@ -1,0 +1,66 @@
+note_id,subject_id,hadm_id,note_type,note_seq,charttime,storetime,text
+1000248-DS-1,1000248,2100852,DS,1,2180-08-03 10:00:00,2180-08-03 10:30:00,"CLINICAL DISCHARGE SUMMARY
+PATIENT DEMOGRAPHICS
+Patient Name: John Doe
+Date of Birth: 05/14/1974
+Gender: Male
+MRN: 948-204-11A
+Date of Admission: 08/01/2180
+Date of Discharge: 08/03/2180
+
+CHIEF COMPLAINT
+The patient presented with acute chest pain substernal pressure radiating to the left arm, rated 8/10.
+
+HISTORY OF PRESENT ILLNESS
+Mr. Doe is a 52-year-old male with a history of hypertension. ECG showed sinus rhythm with non-specific ST changes. Initial troponin level was elevated at 0.08 ng/mL. He was diagnosed with NSTEMI.
+
+PAST MEDICAL HISTORY
+1. Essential Hypertension.
+2. Hyperlipidemia.
+
+PHYSICAL EXAMINATION
+Vitals: BP 138/82 mmHg, HR 78 bpm. Lungs clear.
+
+DIAGNOSTICS & LAB RESULTS
+Cardiac Troponin I: Initial 0.08, 3h repeat 0.24, 6h repeat 0.42 ng/mL.
+Echocardiogram: LVEF of 50% with mild hypokinesis.
+
+ASSESSMENT & PLAN
+1. Acute NSTEMI. Patient underwent coronary angiography revealing 75% stenosis in mid-LAD. A drug-eluting stent was deployed successfully.
+2. Hypertension: Stable, continue Lisinopril 20 mg.
+3. Hyperlipidemia: Start Atorvastatin 40 mg daily.
+4. DAPT: Start Clopidogrel 75 mg and Aspirin 81 mg daily."
+1000951-DS-1,1000951,2300581,DS,1,2185-11-12 14:00:00,2185-11-12 14:45:00,"CLINICAL DISCHARGE SUMMARY
+PATIENT DEMOGRAPHICS
+Patient Name: Sarah Jenkins
+Date of Birth: 03/22/1988
+Gender: Female
+MRN: 312-984-75B
+Date of Admission: 11/10/2185
+Date of Discharge: 11/12/2185
+
+CHIEF COMPLAINT
+Fatigue, severe nausea, vomiting, and abdominal pain.
+
+HISTORY OF PRESENT ILLNESS
+Ms. Jenkins is a 37-year-old female with Type 1 Diabetes Mellitus who presented with a 2-day history of progressive lethargy, nausea, vomiting, and diffuse abdominal discomfort. She reports missing multiple insulin doses due to a stomach flu. On arrival, she was tachypneic with Kussmaul respirations and fruity odor on breath.
+
+PAST MEDICAL HISTORY
+1. Type 1 Diabetes Mellitus - diagnosed age 12.
+2. Diabetic retinopathy.
+
+PHYSICAL EXAMINATION
+Vitals: BP 102/60 mmHg, HR 112 bpm (tachycardia), RR 24 bpm, Temp 36.8 C, O2 Sat 99% on room air.
+General: Dry mucous membranes, skin turgor reduced (moderate dehydration).
+
+DIAGNOSTICS & LAB RESULTS
+- Blood Glucose: 450 mg/dL (hyperglycemia).
+- Arterial Blood Gas (ABG): pH 7.15, HCO3 12 mEq/L (severe metabolic acidosis).
+- Serum Ketones: Strongly positive (3+).
+- Urinalysis: Glucose 4+, Ketones 4+.
+- BMP: Sodium 132 mEq/L (mild hyponatremia), Potassium 5.2 mEq/L.
+
+ASSESSMENT & PLAN
+1. Diabetic Ketoacidosis (DKA): Triggered by insulin non-compliance. Corrected with aggressive IV fluid resuscitation (normal saline) and continuous intravenous insulin infusion. Potassium was replaced. Transitioned to subcutaneous basal-bolus insulin once anion gap closed and eating tolerated.
+2. Dehydration: Resolved with IV fluids.
+3. Diabetes Education: Re-educated on sick-day rules and insulin administration."
