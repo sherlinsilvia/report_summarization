@@ -153,91 +153,88 @@ def generate_mock_response(prompt: str) -> str:
         if not chunks:
             chunks = {0: prompt[:500]}
 
-        # Categorize sentences from the actual uploaded report
-        demographics = []
-        complaints = []
-        diagnoses = []
-        history = []
-        investigations = []
-        treatments = []
-        course = []
-        medications = []
-        followup = []
+        # Sentence-by-sentence extraction directly mapped to source chunk IDs
+        section_sentences = {
+            "p_info": [],
+            "c_comp": [],
+            "diag": [],
+            "hist": [],
+            "inv": [],
+            "treat": [],
+            "crs": [],
+            "meds": [],
+            "fup": []
+        }
 
         for idx, raw_text in chunks.items():
-            # Clean header tags
             clean_text = re.sub(r'^\(Page\s+\d+,\s+Section:[^)]+\):\s*', '', raw_text, flags=re.IGNORECASE)
             clean_text = re.sub(r'\s+', ' ', clean_text).strip()
             
-            sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_text) if len(s.strip()) > 10]
+            sents = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_text) if len(s.strip()) > 10]
             
-            for sent in sentences:
+            for sent in sents:
                 low = sent.lower()
                 cited_sent = f"{sent} [{idx}]"
+                is_med_sent = any(k in low for k in ["mg", "tablet", "capsule", "po ", "daily", "prn", "as needed", "prescribed"])
+                is_fup_sent = any(k in low for k in ["instructed", "return to", "follow up", "follow-up", "appointment", "clinic", "call 911"])
                 
-                if any(k in low for k in ["patient", "mrn", "dob", "years old", "gender", "male", "female", "admitted", "discharge"]):
-                    demographics.append(cited_sent)
-                elif any(k in low for k in ["complaint", "presented", "pain", "shortness of breath", "fever", "cough", "weakness"]):
-                    complaints.append(cited_sent)
-                elif any(k in low for k in ["diagnosis", "primary", "secondary", "impression", "pneumonia", "nstemi", "infarction", "failure", "sepsis", "diabetes"]):
-                    diagnoses.append(cited_sent)
-                elif any(k in low for k in ["history", "past medical", "hypertension", "smoker", "copd", "cad"]):
-                    history.append(cited_sent)
-                elif any(k in low for k in ["lab", "troponin", "ekg", "wbc", "creatinine", "crp", "ct", "x-ray", "imaging", "vitals", "temperature", "blood pressure"]):
-                    investigations.append(cited_sent)
-                elif any(k in low for k in ["treatment", "given", "drip", "stent", "angiography", "antibiotics", "aspirin", "nitroglycerin", "procedure"]):
-                    treatments.append(cited_sent)
-                elif any(k in low for k in ["course", "ccu", "icu", "stable", "tolerated", "uncomplicated", "progression"]):
-                    course.append(cited_sent)
-                elif any(k in low for k in ["medication", "mg", "daily", "po", "qd", "bid", "prn", "discharge meds"]):
-                    medications.append(cited_sent)
-                elif any(k in low for k in ["follow-up", "follow up", "return", "clinic", "weeks", "ed"]):
-                    followup.append(cited_sent)
-                else:
-                    diagnoses.append(cited_sent)
+                if any(k in low for k in ["patient name", "mrn", "dob", "years old", "year old", "gender", "male", "female", "admitted", "admission date", "demographics"]):
+                    section_sentences["p_info"].append(cited_sent)
+                elif is_fup_sent:
+                    section_sentences["fup"].append(cited_sent)
+                elif not is_med_sent and any(k in low for k in ["chief complaint", "complaint", "presented", "shortness of breath", "fever", "cough", "weakness", "chest pain", "knee pain", "abdominal pain"]):
+                    section_sentences["c_comp"].append(cited_sent)
+                elif any(k in low for k in ["diagnosis", "primary", "secondary", "impression", "pneumonia", "nstemi", "infarction", "failure", "sepsis", "diabetes", "fracture", "carcinoma", "stroke"]):
+                    section_sentences["diag"].append(cited_sent)
+                elif any(k in low for k in ["history", "past medical", "hypertension", "smoker", "copd", "cad", "comorbidities", "surgical history"]):
+                    section_sentences["hist"].append(cited_sent)
+                elif any(k in low for k in ["lab", "troponin", "ekg", "ecg", "wbc", "creatinine", "crp", "ct", "x-ray", "imaging", "vitals", "temperature", "blood pressure", "scan"]):
+                    section_sentences["inv"].append(cited_sent)
+                elif any(k in low for k in ["treatment", "given", "drip", "stent", "angiography", "antibiotics", "aspirin", "nitroglycerin", "procedure", "surgery", "orif", "resection"]):
+                    section_sentences["treat"].append(cited_sent)
+                elif any(k in low for k in ["course", "ccu", "icu", "stable", "tolerated", "uncomplicated", "progression", "recovery", "post-op", "pacu"]):
+                    section_sentences["crs"].append(cited_sent)
+                elif is_med_sent or any(k in low for k in ["medication", "discharge meds"]):
+                    section_sentences["meds"].append(cited_sent)
 
-        # Helper to find best matching chunk index for a given set of keywords
-        def get_best_chunk_for_keywords(keywords: list[str], default_id: int) -> int:
-            best_id = default_id
-            max_matches = 0
-            for idx, text in chunks.items():
-                low_text = text.lower()
-                matches = sum(1 for k in keywords if k in low_text)
-                if matches > max_matches:
-                    max_matches = matches
-                    best_id = idx
-            return best_id
+        # Build clean grounded sections picking exact cited sentences from uploaded text
+        first_chunk_id = list(chunks.keys())[0]
+        last_chunk_id = list(chunks.keys())[-1]
 
-        p_info_chunk = get_best_chunk_for_keywords(["patient", "mrn", "dob", "male", "female", "admitted", "demographics"], list(chunks.keys())[0])
-        c_comp_chunk = get_best_chunk_for_keywords(["complaint", "presented", "pain", "shortness of breath", "fever"], list(chunks.keys())[min(1, len(chunks)-1)])
-        diag_chunk = get_best_chunk_for_keywords(["diagnosis", "primary", "impression", "pneumonia", "nstemi", "infarction", "failure"], list(chunks.keys())[min(1, len(chunks)-1)])
-        hist_chunk = get_best_chunk_for_keywords(["history", "past medical", "hypertension", "copd", "cad", "diabetes"], list(chunks.keys())[min(1, len(chunks)-1)])
-        inv_chunk = get_best_chunk_for_keywords(["lab", "troponin", "ekg", "wbc", "creatinine", "ct", "x-ray", "imaging", "vitals"], list(chunks.keys())[min(2, len(chunks)-1)])
-        treat_chunk = get_best_chunk_for_keywords(["treatment", "given", "drip", "stent", "antibiotics", "aspirin", "nitroglycerin"], list(chunks.keys())[min(2, len(chunks)-1)])
-        crs_chunk = get_best_chunk_for_keywords(["course", "ccu", "icu", "stable", "tolerated", "uncomplicated"], list(chunks.keys())[min(3, len(chunks)-1)])
-        meds_chunk = get_best_chunk_for_keywords(["medication", "mg", "daily", "po", "qd", "bid", "discharge meds"], list(chunks.keys())[min(4, len(chunks)-1)])
-        fup_chunk = get_best_chunk_for_keywords(["follow-up", "follow up", "return", "clinic", "weeks"], list(chunks.keys())[-1])
+        def format_section(sec_key: str, default_label: str, fallback_chunk: int) -> str:
+            sents = section_sentences[sec_key]
+            if sents:
+                # Return up to 2 unique cited sentences for this section
+                return " ".join(sents[:2])
+            else:
+                # Extract first clean sentence from fallback_chunk to guarantee 100% true citation grounding
+                chunk_raw = chunks.get(fallback_chunk, list(chunks.values())[0])
+                clean_chunk_text = re.sub(r'^\(Page\s+\d+,\s+Section:[^)]+\):\s*', '', chunk_raw, flags=re.IGNORECASE)
+                first_sent = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_chunk_text) if len(s.strip()) > 15]
+                if first_sent:
+                    return f"{first_sent[0]} [{fallback_chunk}]"
+                return f"{default_label} [{fallback_chunk}]"
 
-        p_info = " ".join(demographics[:2]) if demographics else f"Clinical profile extracted from report context. [{p_info_chunk}]"
-        c_comp = " ".join(complaints[:2]) if complaints else f"Patient presented for clinical evaluation and inpatient management. [{c_comp_chunk}]"
-        diag = " ".join(diagnoses[:2]) if diagnoses else f"Acute medical condition managed as detailed in report records. [{diag_chunk}]"
-        hist = " ".join(history[:2]) if history else f"Past medical history reviewed from inpatient record. [{hist_chunk}]"
-        inv = " ".join(investigations[:2]) if investigations else f"Laboratory tests and diagnostic imaging were performed. [{inv_chunk}]"
-        treat = " ".join(treatments[:2]) if treatments else f"Medical therapies and clinical interventions were administered. [{treat_chunk}]"
-        crs = " ".join(course[:2]) if course else f"Patient was monitored during hospital stay with clinical improvement. [{crs_chunk}]"
-        meds = " ".join(medications[:2]) if medications else f"Discharge medications prescribed as indicated. [{meds_chunk}]"
-        fup = " ".join(followup[:2]) if followup else f"Outpatient follow-up recommended in 2 weeks or if symptoms recur. [{fup_chunk}]"
+        p_info_text = format_section("p_info", "Patient clinical record reviewed.", first_chunk_id)
+        c_comp_text = format_section("c_comp", "Patient presented for clinical evaluation.", min(1, last_chunk_id))
+        diag_text = format_section("diag", "Clinical diagnosis managed per inpatient protocol.", min(1, last_chunk_id))
+        hist_text = format_section("hist", "Medical history reviewed from clinical record.", min(1, last_chunk_id))
+        inv_text = format_section("inv", "Diagnostic tests and laboratory evaluations performed.", min(2, last_chunk_id))
+        treat_text = format_section("treat", "Medical therapy and interventions administered.", min(2, last_chunk_id))
+        crs_text = format_section("crs", "Patient monitored with clinical improvement.", min(3, last_chunk_id))
+        meds_text = format_section("meds", "Discharge medications prescribed as indicated.", min(4, last_chunk_id))
+        fup_text = format_section("fup", "Follow-up recommended in outpatient clinic.", last_chunk_id)
 
         summary = (
-            f"1. **Patient Information**: {p_info}\n\n"
-            f"2. **Chief Complaint**: {c_comp}\n\n"
-            f"3. **Diagnosis**: {diag}\n\n"
-            f"4. **Medical History**: {hist}\n\n"
-            f"5. **Investigations**: {inv}\n\n"
-            f"6. **Treatment Given**: {treat}\n\n"
-            f"7. **Hospital Course**: {crs}\n\n"
-            f"8. **Discharge Medications**: {meds}\n\n"
-            f"9. **Follow-up**: {fup}"
+            f"1. **Patient Information**: {p_info_text}\n\n"
+            f"2. **Chief Complaint**: {c_comp_text}\n\n"
+            f"3. **Diagnosis**: {diag_text}\n\n"
+            f"4. **Medical History**: {hist_text}\n\n"
+            f"5. **Investigations**: {inv_text}\n\n"
+            f"6. **Treatment Given**: {treat_text}\n\n"
+            f"7. **Hospital Course**: {crs_text}\n\n"
+            f"8. **Discharge Medications**: {meds_text}\n\n"
+            f"9. **Follow-up**: {fup_text}"
         )
         return summary
 
