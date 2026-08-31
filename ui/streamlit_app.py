@@ -368,6 +368,44 @@ with col_left:
                 del st.session_state[key]
             st.rerun()
 
+    # Doctor & Patient Animated Clinical Status Card
+    st.markdown("---")
+    st.markdown("### 🩺 Doctor & Patient Workflow")
+    
+    asset_path = os.path.join(os.path.dirname(__file__), "assets", "doctor_patient_consultation.jpg")
+    verif_asset_path = os.path.join(os.path.dirname(__file__), "assets", "doctor_ai_verification.jpg")
+    
+    active_img_path = verif_asset_path if st.session_state.disc_results else asset_path
+    
+    if os.path.exists(active_img_path):
+        st.image(active_img_path, use_container_width=True)
+        
+    p_step = st.session_state.get("pipeline_step", 0)
+    has_disc = st.session_state.get("disc_results") is not None
+    
+    if p_step == 0:
+        status_text = "🩺 Doctor & Patient awaiting report upload..."
+        status_color = "#94a3b8"
+    elif p_step == 1 or p_step == 2:
+        status_text = "📄 Report Parsed & Indexed! Vector embeddings active."
+        status_color = "#3b82f6"
+    elif p_step == 3 and not has_disc:
+        status_text = "✨ RAG Draft Generated! Doctor reviewing clinical claims..."
+        status_color = "#f59e0b"
+    elif has_disc:
+        status_text = "🛡️ DISC Self-Correction Complete! Verified & ready for patient consultation."
+        status_color = "#10b981"
+    else:
+        status_text = "🩺 Physician Discharge Workflow Active"
+        status_color = "#06b6d4"
+
+    st.markdown(
+        f'<div style="background: rgba(15, 23, 42, 0.7); border: 1px solid {status_color}; border-radius: 10px; padding: 12px; text-align: center; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">'
+        f'<div style="font-size: 0.85rem; font-weight: 600; color: {status_color};">{status_text}</div>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+
 with col_right:
     # Check if session exists
     if st.session_state.session_id:
