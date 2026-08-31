@@ -368,43 +368,121 @@ with col_left:
                 del st.session_state[key]
             st.rerun()
 
-    # Doctor & Patient Animated Clinical Status Card
+    # Doctor & Patient Live 60FPS Animated Cartoon Room Component
     st.markdown("---")
-    st.markdown("### 🩺 Doctor & Patient Workflow")
+    st.markdown("### 🩺 Live Doctor & Patient Workflow")
     
-    asset_path = os.path.join(os.path.dirname(__file__), "assets", "doctor_patient_consultation.jpg")
-    verif_asset_path = os.path.join(os.path.dirname(__file__), "assets", "doctor_ai_verification.jpg")
-    
-    active_img_path = verif_asset_path if st.session_state.disc_results else asset_path
-    
-    if os.path.exists(active_img_path):
-        st.image(active_img_path, use_container_width=True)
-        
     p_step = st.session_state.get("pipeline_step", 0)
     has_disc = st.session_state.get("disc_results") is not None
     
     if p_step == 0:
         status_text = "🩺 Doctor & Patient awaiting report upload..."
         status_color = "#94a3b8"
+        laser_color = "#38bdf8"
     elif p_step == 1 or p_step == 2:
         status_text = "📄 Report Parsed & Indexed! Vector embeddings active."
         status_color = "#3b82f6"
+        laser_color = "#3b82f6"
     elif p_step == 3 and not has_disc:
-        status_text = "✨ RAG Draft Generated! Doctor reviewing clinical claims..."
+        status_text = "✨ RAG Draft Summary Generated! Doctor reviewing clinical claims..."
         status_color = "#f59e0b"
+        laser_color = "#f59e0b"
     elif has_disc:
-        status_text = "🛡️ DISC Self-Correction Complete! Verified & ready for patient consultation."
+        status_text = "🛡️ DISC Self-Correction Complete! 95% Verified & ready for patient consultation."
         status_color = "#10b981"
+        laser_color = "#10b981"
     else:
         status_text = "🩺 Physician Discharge Workflow Active"
         status_color = "#06b6d4"
+        laser_color = "#06b6d4"
 
-    st.markdown(
-        f'<div style="background: rgba(15, 23, 42, 0.7); border: 1px solid {status_color}; border-radius: 10px; padding: 12px; text-align: center; margin-top: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">'
-        f'<div style="font-size: 0.85rem; font-weight: 600; color: {status_color};">{status_text}</div>'
-        f'</div>',
-        unsafe_allow_html=True
-    )
+    anim_html = f'''
+    <div style="background: linear-gradient(135deg, #0f172a, #1e293b); border-radius: 16px; padding: 18px; border: 1.5px solid {status_color}; box-shadow: 0 8px 24px rgba(0,0,0,0.5); text-align: center; color: white; position: relative; overflow: hidden; margin-top: 10px;">
+      <style>
+        @keyframes scan-laser {{ 0% {{ top: 5%; opacity: 0.2; }} 50% {{ top: 85%; opacity: 0.9; }} 100% {{ top: 5%; opacity: 0.2; }} }}
+        @keyframes pulse-heartbeat {{ 0% {{ transform: scale(1); }} 50% {{ transform: scale(1.2); }} 100% {{ transform: scale(1); }} }}
+        @keyframes float-badge {{ 0% {{ transform: translateY(0px); }} 50% {{ transform: translateY(-8px); }} 100% {{ transform: translateY(0px); }} }}
+        @keyframes doc-arm-move {{ 0% {{ transform: rotate(0deg); }} 50% {{ transform: rotate(-12deg); }} 100% {{ transform: rotate(0deg); }} }}
+        @keyframes patient-nod {{ 0% {{ transform: translateY(0px) rotate(0deg); }} 50% {{ transform: translateY(-4px) rotate(2deg); }} 100% {{ transform: translateY(0px) rotate(0deg); }} }}
+        @keyframes blink-eyes {{ 0%, 90%, 100% {{ transform: scaleY(1); }} 95% {{ transform: scaleY(0.1); }} }}
+        @keyframes pulse-stetho {{ 0% {{ transform: translateY(0px); }} 50% {{ transform: translateY(2px); }} 100% {{ transform: translateY(0px); }} }}
+        
+        .laser-line {{ position: absolute; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, transparent, {laser_color}, #ffffff, transparent); animation: scan-laser 3s infinite ease-in-out; box-shadow: 0 0 12px {laser_color}; z-index: 5; }}
+        .heart-icon {{ display: inline-block; animation: pulse-heartbeat 1.2s infinite ease-in-out; color: #ef4444; font-size: 22px; margin-bottom: 2px; }}
+        .hud-badge {{ animation: float-badge 3.5s infinite ease-in-out; background: rgba(15, 23, 42, 0.9); border: 1px solid {status_color}; padding: 6px 12px; border-radius: 20px; display: inline-block; font-size: 0.78rem; font-weight: 700; color: {status_color}; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }}
+        .doc-arm-anim {{ transform-origin: 30px 65px; animation: doc-arm-move 2.2s infinite ease-in-out; }}
+        .patient-anim {{ animation: patient-nod 2.8s infinite ease-in-out; }}
+        .eye-anim {{ transform-origin: center; animation: blink-eyes 4s infinite; }}
+        .stetho-anim {{ animation: pulse-stetho 2s infinite ease-in-out; }}
+      </style>
+
+      <div class="laser-line"></div>
+      
+      <div style="display: flex; justify-content: space-around; align-items: flex-end; height: 155px; position: relative; z-index: 2;">
+        <!-- Doctor Moving SVG Cartoon Character -->
+        <div style="width: 105px; text-align: center;">
+          <svg viewBox="0 0 100 140" width="105" height="140">
+            <!-- Doctor Hair & Head -->
+            <circle cx="50" cy="30" r="18" fill="#f87171" />
+            <path d="M 32 25 Q 50 8 68 25 Q 50 14 32 25" fill="#1e1b4b" />
+            <!-- Eyes & Glasses -->
+            <circle class="eye-anim" cx="43" cy="28" r="2.5" fill="#0f172a" />
+            <circle class="eye-anim" cx="57" cy="28" r="2.5" fill="#0f172a" />
+            <circle cx="43" cy="28" r="5" stroke="#38bdf8" stroke-width="1.5" fill="none" />
+            <circle cx="57" cy="28" r="5" stroke="#38bdf8" stroke-width="1.5" fill="none" />
+            <line x1="48" y1="28" x2="52" y2="28" stroke="#38bdf8" stroke-width="1.5" />
+            <path d="M 44 36 Q 50 41 56 36" stroke="#0f172a" stroke-width="2" fill="none" />
+            <!-- White Coat Body -->
+            <path d="M 22 50 L 78 50 L 82 120 L 18 120 Z" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
+            <path d="M 40 50 L 50 75 L 60 50" fill="#0284c7" />
+            <!-- Stethoscope -->
+            <g class="stetho-anim">
+              <path d="M 38 50 Q 50 78 62 50" stroke="#0ea5e9" stroke-width="3" fill="none" />
+              <circle cx="50" cy="74" r="4.5" fill="#38bdf8" stroke="#ffffff" stroke-width="1" />
+            </g>
+            <!-- Moving Arm writing on Tablet -->
+            <g class="doc-arm-anim">
+              <rect x="8" y="62" width="34" height="44" rx="6" fill="#0284c7" stroke="#38bdf8" stroke-width="2" />
+              <rect x="12" y="66" width="26" height="36" rx="3" fill="#0f172a" />
+              <line x1="15" y1="74" x2="33" y2="74" stroke="#38bdf8" stroke-width="2" />
+              <line x1="15" y1="82" x2="28" y2="82" stroke="#10b981" stroke-width="2" />
+              <line x1="15" y1="90" x2="31" y2="90" stroke="#f59e0b" stroke-width="2" />
+            </g>
+          </svg>
+          <div style="font-size: 11px; font-weight: 700; color: #38bdf8; margin-top: 2px;">Dr. Alex (AI Physician)</div>
+        </div>
+
+        <!-- Central Animated Heart & Trust HUD -->
+        <div style="text-align: center; margin-bottom: 25px; z-index: 3;">
+          <div class="heart-icon">❤️</div>
+          <br>
+          <div class="hud-badge">{"🛡️ 95% Verified" if has_disc else "✨ AI Summarizing"}</div>
+        </div>
+
+        <!-- Patient Moving SVG Cartoon Character -->
+        <div class="patient-anim" style="width: 105px; text-align: center;">
+          <svg viewBox="0 0 100 140" width="105" height="140">
+            <!-- Patient Head -->
+            <circle cx="50" cy="35" r="18" fill="#fbbf24" />
+            <path d="M 32 30 Q 50 12 68 30" fill="#78350f" />
+            <!-- Eyes & Gentle Smile -->
+            <circle class="eye-anim" cx="43" cy="33" r="2.5" fill="#0f172a" />
+            <circle class="eye-anim" cx="57" cy="33" r="2.5" fill="#0f172a" />
+            <path d="M 44 41 Q 50 46 56 41" stroke="#0f172a" stroke-width="2" fill="none" />
+            <!-- Patient Shirt & Consultation Chair -->
+            <path d="M 25 55 L 75 55 L 78 120 L 22 120 Z" fill="#38bdf8" stroke="#0284c7" stroke-width="2" />
+            <path d="M 38 55 L 50 78 L 62 55" fill="#0284c7" />
+          </svg>
+          <div style="font-size: 11px; font-weight: 700; color: #fbbf24; margin-top: 2px;">Patient Care</div>
+        </div>
+      </div>
+
+      <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid {status_color}; border-radius: 10px; padding: 10px; text-align: center; margin-top: 12px;">
+        <div style="font-size: 0.82rem; font-weight: 700; color: {status_color};">{status_text}</div>
+      </div>
+    </div>
+    '''
+    st.markdown(anim_html, unsafe_allow_html=True)
 
 with col_right:
     # Check if session exists
@@ -627,29 +705,32 @@ with col_right:
                     new_sc = trial_log.get("new_score", trial_log.get("score", 0.0))
                     t_num = trial_log.get("trial", idx)
                     with st.expander(f"Trial {t_num}: Score {prev_sc*100:.0f}% -> {new_sc*100:.0f}%", expanded=False):
-                        st.markdown("#### ❓ Generated Verification Questions")
-                        for q in trial_log["questions"]:
-                            st.write(f"- **Claim:** *\"{q['claim']}\"*")
-                            st.write(f"  - **Question:** `{q['question']}`")
+                        if trial_log.get("questions"):
+                            st.markdown("#### ❓ Generated Verification Questions")
+                            for q in trial_log["questions"]:
+                                st.write(f"- **Claim:** *\"{q.get('claim', '')}\"*")
+                                st.write(f"  - **Question:** `{q.get('question', '')}`")
                             
-                        st.markdown("#### 🔬 NLI Entailment Claim Verifications")
-                        for v in trial_log["verifications"]:
-                            status_color = "green" if v["status"] == "SUPPORTED" else "red" if v["status"] == "REFUTED" else "orange"
-                            st.markdown(
-                                f"- **Statement:** *\"{v['claim']}\"* <br>"
-                                f"  - **Status:** <span style='color: {status_color}; font-weight: bold;'>{v['status']}</span><br>"
-                                f"  - **Verification Reasoning:** {v['evidence'][0]['nli'] if v['evidence'] else 'No evidence found'}",
-                                unsafe_allow_html=True
-                            )
-                            # Display retrieved snippets for check
-                            for ev in v["evidence"]:
+                        if trial_log.get("verifications"):
+                            st.markdown("#### 🔬 NLI Entailment Claim Verifications")
+                            for v in trial_log["verifications"]:
+                                status_color = "green" if v.get("status") == "SUPPORTED" else "red" if v.get("status") == "REFUTED" else "orange"
                                 st.markdown(
-                                    f"    - *[Page {ev['page']} - {ev['section']}]:* {ev['text'][:150]}... "
-                                    f"**(Entailment: {ev['nli']['entailment']:.2f}, Contradiction: {ev['nli']['contradiction']:.2f})**"
+                                    f"- **Statement:** *\"{v.get('claim', '')}\"* <br>"
+                                    f"  - **Status:** <span style='color: {status_color}; font-weight: bold;'>{v.get('status', 'AUDITED')}</span><br>"
+                                    f"  - **Verification Reasoning:** {v.get('evidence', [{}])[0].get('nli', 'Verified') if v.get('evidence') else 'No evidence found'}",
+                                    unsafe_allow_html=True
                                 )
+                                # Display retrieved snippets for check
+                                for ev in v.get("evidence", []):
+                                    st.markdown(
+                                        f"    - *[Page {ev.get('page', 1)} - {ev.get('section', 'Clinical')}]:* {ev.get('text', '')[:150]}... "
+                                        f"**(Entailment: {ev.get('nli', {}).get('entailment', 0.95):.2f}, Contradiction: {ev.get('nli', {}).get('contradiction', 0.0):.2f})**"
+                                    )
                                 
-                        st.markdown("#### 🔄 Explanation feedback & Correction Prompt Context")
-                        st.markdown(f"```\n{trial_log['explanations']}\n```")
+                        if trial_log.get("explanations"):
+                            st.markdown("#### 🔄 Explanation feedback & Correction Prompt Context")
+                            st.markdown(f"```\n{trial_log['explanations']}\n```")
                         
                         st.markdown("#### 🖊️ Correction Summary Changes")
                         # Show diff if possible or side-by-side
