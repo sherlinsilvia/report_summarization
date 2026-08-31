@@ -184,6 +184,13 @@ def generate_mock_response(prompt: str) -> str:
             "fup": []
         }
 
+        # Helper to strip recurring uppercase section headers and broken sentence fragments
+        def sanitize_sentence(sent: str) -> str:
+            clean = re.sub(r'^(CLINICAL DISCHARGE SUMMARY|PATIENT DEMOGRAPHICS|HISTORY OF PRESENT ILLNESS|CHIEF COMPLAINT|CURRENT MEDICATIONS & ALLERGIES|PHYSICAL EXAMINATION|HOSPITAL COURSE|DISCHARGE INSTRUCTIONS|LABORATORY DATA|GENERAL:)\s*', '', sent, flags=re.IGNORECASE)
+            clean = re.sub(r'^\s*(MR\.|MS\.|MRS\.|PATIENT|SUMMARY)\s*$', '', clean, flags=re.IGNORECASE)
+            clean = re.sub(r'^[•\-\:\s]+', '', clean).strip()
+            return clean
+
         for idx, raw_text in chunks.items():
             clean_text = re.sub(r'^\(Page\s+\d+,\s+Section:[^)]+\):\s*', '', raw_text, flags=re.IGNORECASE)
             clean_text = re.sub(r'\s+', ' ', clean_text).strip()
@@ -191,9 +198,13 @@ def generate_mock_response(prompt: str) -> str:
             sents = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_text) if len(s.strip()) > 10]
             
             for sent in sents:
-                low = sent.lower()
-                cited_sent = f"{sent} [{idx}]"
-                is_med_sent = any(k in low for k in ["mg", "tablet", "capsule", "po ", "daily", "prn", "as needed", "prescribed"])
+                clean_s = sanitize_sentence(sent)
+                if not clean_s or len(clean_s) < 8 or clean_s.lower() in ["mr.", "ms.", "history of present illness"]:
+                    continue
+                    
+                low = clean_s.lower()
+                cited_sent = f"{clean_s} [{idx}]"
+                is_med_sent = any(k in low for k in ["mg", "tablet", "capsule", "po ", "daily", "prn", "as needed", "prescribed", "lisinopril", "atorvastatin", "aspirin", "apixaban"])
                 is_fup_sent = any(k in low for k in ["instructed", "return to", "follow up", "follow-up", "appointment", "clinic", "call 911"])
                 
                 if any(k in low for k in ["patient name", "mrn", "dob", "years old", "year old", "gender", "male", "female", "admitted", "admission date", "demographics"]):
@@ -222,19 +233,25 @@ def generate_mock_response(prompt: str) -> str:
         def format_section(sec_key: str, default_label: str, fallback_chunk: int) -> str:
             sents = section_sentences[sec_key]
             if sents:
-                # Return up to 2 unique cited sentences for this section
-                return " ".join(sents[:2])
+                # Deduplicate and return clean sentences for this section
+                seen = set()
+                clean_sents = []
+                for s in sents:
+                    core_t = re.sub(r'\[\d+\]', '', s).strip()
+                    if core_t not in seen:
+                        seen.add(core_t)
+                        clean_sents.append(s)
+                return " ".join(clean_sents[:2])
             else:
-                # Extract first clean sentence from fallback_chunk to guarantee 100% true citation grounding
                 chunk_raw = chunks.get(fallback_chunk, list(chunks.values())[0])
                 clean_chunk_text = re.sub(r'^\(Page\s+\d+,\s+Section:[^)]+\):\s*', '', chunk_raw, flags=re.IGNORECASE)
-                first_sent = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_chunk_text) if len(s.strip()) > 15]
+                first_sent = [sanitize_sentence(s) for s in re.split(r'(?<=[.!?])\s+', clean_chunk_text) if len(sanitize_sentence(s)) > 15]
                 if first_sent:
                     return f"{first_sent[0]} [{fallback_chunk}]"
                 return f"{default_label} [{fallback_chunk}]"
 
         p_info_text = format_section("p_info", "Patient clinical record reviewed.", first_chunk_id)
-        c_comp_text = format_section("c_comp", "Patient presented for clinical evaluation.", min(1, last_chunk_id))
+        c_comp_text = format_section("c_comp", "Patient presented for clinical evaluation and inpatient care.", min(1, last_chunk_id))
         diag_text = format_section("diag", "Clinical diagnosis managed per inpatient protocol.", min(1, last_chunk_id))
         hist_text = format_section("hist", "Medical history reviewed from clinical record.", min(1, last_chunk_id))
         inv_text = format_section("inv", "Diagnostic tests and laboratory evaluations performed.", min(2, last_chunk_id))
