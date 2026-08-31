@@ -196,20 +196,37 @@ def generate_mock_response(prompt: str) -> str:
                 else:
                     diagnoses.append(cited_sent)
 
-        # Fallbacks using available chunks if category lists are empty
-        all_chunk_ids = list(chunks.keys())
-        first_id = all_chunk_ids[0]
-        last_id = all_chunk_ids[-1]
+        # Helper to find best matching chunk index for a given set of keywords
+        def get_best_chunk_for_keywords(keywords: list[str], default_id: int) -> int:
+            best_id = default_id
+            max_matches = 0
+            for idx, text in chunks.items():
+                low_text = text.lower()
+                matches = sum(1 for k in keywords if k in low_text)
+                if matches > max_matches:
+                    max_matches = matches
+                    best_id = idx
+            return best_id
 
-        p_info = " ".join(demographics[:2]) if demographics else f"Clinical profile extracted from report context. [{first_id}]"
-        c_comp = " ".join(complaints[:2]) if complaints else f"Patient presented for clinical evaluation and inpatient management. [{first_id}]"
-        diag = " ".join(diagnoses[:2]) if diagnoses else f"Acute medical condition managed as detailed in report records. [{first_id}]"
-        hist = " ".join(history[:2]) if history else f"Past medical history reviewed from inpatient record. [{first_id}]"
-        inv = " ".join(investigations[:2]) if investigations else f"Laboratory tests and diagnostic imaging were performed. [{last_id}]"
-        treat = " ".join(treatments[:2]) if treatments else f"Medical therapies and clinical interventions were administered. [{last_id}]"
-        crs = " ".join(course[:2]) if course else f"Patient was monitored during hospital stay with clinical improvement. [{last_id}]"
-        meds = " ".join(medications[:2]) if medications else f"Discharge medications prescribed as indicated. [{last_id}]"
-        fup = " ".join(followup[:2]) if followup else f"Outpatient follow-up recommended in 2 weeks or if symptoms recur. [{last_id}]"
+        p_info_chunk = get_best_chunk_for_keywords(["patient", "mrn", "dob", "male", "female", "admitted", "demographics"], list(chunks.keys())[0])
+        c_comp_chunk = get_best_chunk_for_keywords(["complaint", "presented", "pain", "shortness of breath", "fever"], list(chunks.keys())[min(1, len(chunks)-1)])
+        diag_chunk = get_best_chunk_for_keywords(["diagnosis", "primary", "impression", "pneumonia", "nstemi", "infarction", "failure"], list(chunks.keys())[min(1, len(chunks)-1)])
+        hist_chunk = get_best_chunk_for_keywords(["history", "past medical", "hypertension", "copd", "cad", "diabetes"], list(chunks.keys())[min(1, len(chunks)-1)])
+        inv_chunk = get_best_chunk_for_keywords(["lab", "troponin", "ekg", "wbc", "creatinine", "ct", "x-ray", "imaging", "vitals"], list(chunks.keys())[min(2, len(chunks)-1)])
+        treat_chunk = get_best_chunk_for_keywords(["treatment", "given", "drip", "stent", "antibiotics", "aspirin", "nitroglycerin"], list(chunks.keys())[min(2, len(chunks)-1)])
+        crs_chunk = get_best_chunk_for_keywords(["course", "ccu", "icu", "stable", "tolerated", "uncomplicated"], list(chunks.keys())[min(3, len(chunks)-1)])
+        meds_chunk = get_best_chunk_for_keywords(["medication", "mg", "daily", "po", "qd", "bid", "discharge meds"], list(chunks.keys())[min(4, len(chunks)-1)])
+        fup_chunk = get_best_chunk_for_keywords(["follow-up", "follow up", "return", "clinic", "weeks"], list(chunks.keys())[-1])
+
+        p_info = " ".join(demographics[:2]) if demographics else f"Clinical profile extracted from report context. [{p_info_chunk}]"
+        c_comp = " ".join(complaints[:2]) if complaints else f"Patient presented for clinical evaluation and inpatient management. [{c_comp_chunk}]"
+        diag = " ".join(diagnoses[:2]) if diagnoses else f"Acute medical condition managed as detailed in report records. [{diag_chunk}]"
+        hist = " ".join(history[:2]) if history else f"Past medical history reviewed from inpatient record. [{hist_chunk}]"
+        inv = " ".join(investigations[:2]) if investigations else f"Laboratory tests and diagnostic imaging were performed. [{inv_chunk}]"
+        treat = " ".join(treatments[:2]) if treatments else f"Medical therapies and clinical interventions were administered. [{treat_chunk}]"
+        crs = " ".join(course[:2]) if course else f"Patient was monitored during hospital stay with clinical improvement. [{crs_chunk}]"
+        meds = " ".join(medications[:2]) if medications else f"Discharge medications prescribed as indicated. [{meds_chunk}]"
+        fup = " ".join(followup[:2]) if followup else f"Outpatient follow-up recommended in 2 weeks or if symptoms recur. [{fup_chunk}]"
 
         summary = (
             f"1. **Patient Information**: {p_info}\n\n"
