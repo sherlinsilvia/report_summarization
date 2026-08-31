@@ -191,8 +191,22 @@ async def upload_report(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="Document contains no readable text.")
             
         # Clean text page by page
+        full_text_list = []
         for p in pages:
             p["text"] = clean_text(p["text"])
+            full_text_list.append(p["text"])
+            
+        # Validate that document belongs to medical/clinical domain
+        from preprocessing.cleaner import validate_medical_document
+        full_doc_text = " ".join(full_text_list)
+        is_valid_med, med_reason, _ = validate_medical_document(full_doc_text)
+        if not is_valid_med:
+            if os.path.exists(temp_file_path):
+                os.remove(temp_file_path)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid Document Domain: The uploaded file does not appear to be a medical/clinical report ({med_reason}). Please upload a valid clinical discharge summary, medical record, or health report PDF/TXT."
+            )
             
         # Chunk text
         chunks = chunk_text(pages)
@@ -204,6 +218,8 @@ async def upload_report(file: UploadFile = File(...)):
         with open(chunks_file, "w", encoding="utf-8") as f:
             json.dump(chunks, f, indent=2)
             
+    except HTTPException:
+        raise
     except Exception as e:
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)

@@ -335,7 +335,11 @@ with col_left:
                             st.success(f"Successfully processed **{data['file_name']}**! Indexed {data['num_chunks']} document chunks.")
                             st.session_state.pipeline_step = 2
                         else:
-                            st.error(f"Error from backend: {res.text}")
+                            try:
+                                err_detail = res.json().get("detail", res.text)
+                            except Exception:
+                                err_detail = res.text
+                            st.error(f"⛔ **Upload Rejected**: {err_detail}")
                             st.session_state.pipeline_step = 0
                     except Exception as e:
                         st.error(f"Could not connect to FastAPI server at {API_URL}. {e}")
@@ -462,8 +466,14 @@ with col_right:
                         unsafe_allow_html=True
                     )
                     
-            # Sub-metrics cards
-            active_audit = st.session_state.disc_results["audit_history"][-1]["audit_details"] if has_disc else st.session_state.trust_results
+            # Sub-metrics cards safely retrieved from active audit details or trust results
+            active_audit = None
+            if has_disc and st.session_state.disc_results.get("audit_history"):
+                last_hist = st.session_state.disc_results["audit_history"][-1]
+                active_audit = last_hist.get("audit_details") or last_hist.get("details")
+                
+            if not active_audit:
+                active_audit = st.session_state.trust_results
             sc_cols = st.columns(5)
             
             sub_metrics = [
