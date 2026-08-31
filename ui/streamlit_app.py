@@ -585,7 +585,10 @@ with col_right:
                 st.info(f"📈 **Trust Score Optimization Pathway**: {' ➡️ '.join(history_strs)}")
                 
                 for idx, trial_log in enumerate(disc_info["audit_history"]):
-                    with st.expander(f"Trial {trial_log['trial']}: Score {trial_log['previous_score']*100:.0f}% -> {trial_log['new_score']*100:.0f}%", expanded=False):
+                    prev_sc = trial_log.get("previous_score", trial_log.get("score", 0.0))
+                    new_sc = trial_log.get("new_score", trial_log.get("score", 0.0))
+                    t_num = trial_log.get("trial", idx)
+                    with st.expander(f"Trial {t_num}: Score {prev_sc*100:.0f}% -> {new_sc*100:.0f}%", expanded=False):
                         st.markdown("#### ❓ Generated Verification Questions")
                         for q in trial_log["questions"]:
                             st.write(f"- **Claim:** *\"{q['claim']}\"*")

@@ -122,26 +122,44 @@ def query_llm(prompt: str, system_message: str = "You are a helpful clinical ass
 
 def generate_mock_response(prompt: str) -> str:
     """
-    Generates a high-quality, professional mock response based on prompt analysis.
-    Cleans raw metadata prefixes and formats structured clinical summaries without markdown artifacts.
+    Generates a high-quality, professional, ultra-clear clinical response based on prompt context.
+    Formats structured Physician summaries and Patient explanations with bullet points and clear headings.
     """
     # 1. Check if it's Patient Summary Prompt
-    if "Patient Explanation Output:" in prompt or "simple, clear English" in prompt:
+    if "Patient Explanation Output:" in prompt or "simple, clear English" in prompt or "simple Grade 6 English" in prompt:
+        # Dynamically extract key medical facts from the clinical prompt
+        diag_match = re.search(r'3\.\s+\*\*Diagnosis\*\*:\s+(.*?)(?=\n\n|\n4\.|\Z)', prompt, re.DOTALL)
+        treat_match = re.search(r'6\.\s+\*\*Treatment Given\*\*:\s+(.*?)(?=\n\n|\n7\.|\Z)', prompt, re.DOTALL)
+        meds_match = re.search(r'8\.\s+\*\*Discharge Medications\*\*:\s+(.*?)(?=\n\n|\n9\.|\Z)', prompt, re.DOTALL)
+        fup_match = re.search(r'9\.\s+\*\*Follow-up\*\*:\s+(.*?)(?=\n\n|\Z)', prompt, re.DOTALL)
+
+        raw_diag = re.sub(r'\[\d+\]', '', diag_match.group(1)).strip() if diag_match else "your medical condition"
+        raw_treat = re.sub(r'\[\d+\]', '', treat_match.group(1)).strip() if treat_match else "heart and supportive care medications"
+        raw_meds = re.sub(r'\[\d+\]', '', meds_match.group(1)).strip() if meds_match else "prescribed home medications daily"
+        raw_fup = re.sub(r'\[\d+\]', '', fup_match.group(1)).strip() if fup_match else "Follow-up with your doctor in 2 weeks"
+
+        # Clean bullet point prefixes
+        raw_diag = re.sub(r'^[•\-]\s*', '', raw_diag).strip()
+        raw_treat = re.sub(r'^[•\-]\s*', '', raw_treat).strip()
+        raw_meds = re.sub(r'^[•\-]\s*', '', raw_meds).strip()
+        raw_fup = re.sub(r'^[•\-]\s*', '', raw_fup).strip()
+
         return (
-            "1. **What happened?**\n"
-            "You were admitted to the hospital for chest discomfort and shortness of breath. Medical tests confirmed a mild heart attack caused by a blocked blood vessel in your heart.\n\n"
+            "### Patient-Friendly Discharge Explanation\n\n"
+            "1. **Why was I in the hospital?**\n"
+            f"   You were admitted to the hospital for medical care and evaluation. Your healthcare team evaluated and treated you for: **{raw_diag}**.\n\n"
             "2. **What treatment did I receive?**\n"
-            "You were started on heart and blood-thinning medications. You had a minor procedure where doctors placed a small stent (a tiny mesh tube) inside your blocked blood vessel to restore healthy blood flow.\n\n"
-            "3. **Medicines to continue**\n"
-            "- **Aspirin (81 mg) & Clopidogrel (75 mg)**: Take both daily to prevent blood clots around your stent.\n"
-            "- **Lisinopril (20 mg)**: Take once daily to manage your blood pressure.\n"
-            "- **Atorvastatin (40 mg)**: Take at bedtime to keep your blood vessels healthy.\n\n"
-            "4. **Things to do at home**\n"
-            "Rest at home, avoid heavy lifting for the first week, eat a low-salt diet, and take short gentle walks.\n\n"
-            "5. **Warning signs**\n"
-            "Call 911 or return to the emergency room immediately if you feel severe chest pain, shortness of breath, or notice unusual bleeding or swelling.\n\n"
-            "6. **Next appointment**\n"
-            "You have a follow-up visit with your cardiologist in 2 weeks."
+            f"   During your stay, doctors provided targeted treatments to help you recover safely: **{raw_treat}**.\n\n"
+            "3. **What medicines do I need to take at home?**\n"
+            f"   Please continue taking your prescribed medications as directed by your doctor:\n"
+            f"   - **{raw_meds}**\n\n"
+            "4. **What should I do at home?**\n"
+            "   - Rest at home, avoid heavy lifting or strenuous exercise for the first week.\n"
+            "   - Drink plenty of water, follow your recommended diet, and take gentle short walks.\n\n"
+            "5. **Warning signs to watch out for**\n"
+            "   Call 911 or go to the nearest Emergency Room immediately if you experience severe shortness of breath, sudden chest pain, high fever, or unexpected bleeding.\n\n"
+            "6. **Next Doctor Appointment**\n"
+            f"   - **Follow-up Instruction**: {raw_fup}"
         )
 
     # 2. Check if it's Doctor Summary Prompt (or initial prompt with context)
@@ -226,15 +244,15 @@ def generate_mock_response(prompt: str) -> str:
         fup_text = format_section("fup", "Follow-up recommended in outpatient clinic.", last_chunk_id)
 
         summary = (
-            f"1. **Patient Information**: {p_info_text}\n\n"
-            f"2. **Chief Complaint**: {c_comp_text}\n\n"
-            f"3. **Diagnosis**: {diag_text}\n\n"
-            f"4. **Medical History**: {hist_text}\n\n"
-            f"5. **Investigations**: {inv_text}\n\n"
-            f"6. **Treatment Given**: {treat_text}\n\n"
-            f"7. **Hospital Course**: {crs_text}\n\n"
-            f"8. **Discharge Medications**: {meds_text}\n\n"
-            f"9. **Follow-up**: {fup_text}"
+            f"1. **Patient Information**:\n   - {p_info_text}\n\n"
+            f"2. **Chief Complaint**:\n   - {c_comp_text}\n\n"
+            f"3. **Primary Diagnosis**:\n   - {diag_text}\n\n"
+            f"4. **Medical History**:\n   - {hist_text}\n\n"
+            f"5. **Investigations & Labs**:\n   - {inv_text}\n\n"
+            f"6. **Treatment Given**:\n   - {treat_text}\n\n"
+            f"7. **Hospital Course**:\n   - {crs_text}\n\n"
+            f"8. **Discharge Medications**:\n   - {meds_text}\n\n"
+            f"9. **Follow-up Protocol**:\n   - {fup_text}"
         )
         return summary
 
