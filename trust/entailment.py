@@ -86,32 +86,44 @@ def compute_nli(premise: str, hypothesis: str) -> dict:
 
 def compute_nli_fallback(premise: str, hypothesis: str) -> dict:
     """
-    Pure Python rule-based NLI fallback using word overlap and contradiction indicators.
+    Pure Python rule-based NLI fallback using medical content word overlap and contradiction indicators.
     """
-    premise_words = set(premise.lower().split())
-    hypothesis_words = set(hypothesis.lower().split())
+    import re
     
-    if not hypothesis_words:
+    stop_words = {
+        "the", "is", "are", "was", "were", "be", "been", "being", "a", "an", "and", "or", "in", "of",
+        "to", "with", "for", "on", "at", "by", "as", "patient", "date", "mrn", "name", "summary",
+        "has", "had", "have", "this", "that", "it", "from", "he", "she", "his", "her", "mg", "daily"
+    }
+    
+    # Clean words stripping punctuation
+    p_clean_words = set(re.findall(r'\b[a-zA-Z0-9]+\b', premise.lower()))
+    h_clean_words = set(re.findall(r'\b[a-zA-Z0-9]+\b', hypothesis.lower()))
+    
+    if not h_clean_words:
         return {"entailment": 0.0, "contradiction": 0.0, "neutral": 1.0}
         
     # Check for direct contradictions (negations)
-    negations = {"not", "no", "never", "denies", "denied", "without", "negative", "absent", "normal"}
-    p_neg = premise_words.intersection(negations)
-    h_neg = hypothesis_words.intersection(negations)
-    
-    # If one negates and the other doesn't, suspect contradiction
+    negations = {"not", "no", "never", "denies", "denied", "without", "negative", "absent"}
+    p_neg = p_clean_words.intersection(negations)
+    h_neg = h_clean_words.intersection(negations)
     is_negation_mismatch = len(p_neg) != len(h_neg)
     
-    # Calculate word overlap
-    overlap = premise_words.intersection(hypothesis_words)
-    overlap_ratio = len(overlap) / len(hypothesis_words)
+    # Content words (excluding stop words)
+    p_content = p_clean_words - stop_words
+    h_content = h_clean_words - stop_words
     
-    if is_negation_mismatch and overlap_ratio > 0.4:
-        return {"entailment": 0.1, "contradiction": 0.8, "neutral": 0.1}
-    elif overlap_ratio > 0.6:
-        # High overlap suggests entailment
-        return {"entailment": 0.8, "contradiction": 0.05, "neutral": 0.15}
-    elif overlap_ratio > 0.2:
-        return {"entailment": 0.3, "contradiction": 0.1, "neutral": 0.6}
+    if not h_content:
+        h_content = h_clean_words
+        
+    overlap = p_content.intersection(h_content)
+    overlap_ratio = len(overlap) / len(h_content) if h_content else 0.0
+    
+    if is_negation_mismatch and overlap_ratio > 0.3:
+        return {"entailment": 0.1, "contradiction": 0.85, "neutral": 0.05}
+    elif overlap_ratio >= 0.35 or len(overlap) >= 3:
+        return {"entailment": 0.95, "contradiction": 0.02, "neutral": 0.03}
+    elif overlap_ratio >= 0.15:
+        return {"entailment": 0.50, "contradiction": 0.05, "neutral": 0.45}
     else:
-        return {"entailment": 0.1, "contradiction": 0.1, "neutral": 0.8}
+        return {"entailment": 0.15, "contradiction": 0.10, "neutral": 0.75}
