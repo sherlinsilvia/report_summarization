@@ -253,7 +253,19 @@ def generate_mock_response(prompt: str) -> str:
     elif "Correct the clinical summary by rewriting only" in prompt:
         orig_match = re.search(r'Original Summary:\n(.*?)\n\nVerification Audit Results:', prompt, re.DOTALL)
         original_summary = orig_match.group(1) if orig_match else ""
-        corrected_summary = original_summary.replace("[REFUTED]", "(corrected)")
-        return corrected_summary
+        
+        # Ensure all sentences in corrected summary have clean inline citations attached
+        lines = original_summary.split("\n")
+        corrected_lines = []
+        for i, line in enumerate(lines):
+            line_str = line.strip()
+            if not line_str or re.match(r'^\d+\.\s*\*\*[^*]+\*\*:?$', line_str):
+                corrected_lines.append(line)
+            else:
+                if not re.search(r'\[\d+\]', line_str):
+                    line_str = f"{line_str} [0]"
+                corrected_lines.append(line_str)
+                
+        return "\n".join(corrected_lines)
         
     return "Mock Response: Operation processed."
