@@ -61,9 +61,10 @@ def run_disc_pipeline(
         audit_details = compute_composite_trust_score(current_summary, current_chunks)
         sentence_logs = audit_details["details"]["sentences"]
         
-        # a. Generate verification questions for low-confidence claims
-        questions = generate_verification_questions(sentence_logs)
-        print(f"Generated {len(questions)} verification questions for low-confidence claims.")
+        # a. Generate verification questions for low-confidence claims (or deep audit on trial > 1)
+        force_all_flag = (trial > 1)
+        questions = generate_verification_questions(sentence_logs, force_all=force_all_flag)
+        print(f"Generated {len(questions)} verification questions for claims.")
         
         if not questions:
             print("No weak claims identified. Ending correction loop.")

@@ -4,31 +4,28 @@ from summarization.prompt import CLAIM_EXTRACTION_PROMPT
 from summarization.generator import query_llm
 
 def generate_verification_questions(
-    sentence_logs: list[dict]
+    sentence_logs: list[dict],
+    force_all: bool = False
 ) -> list[dict]:
     """
     Identifies low-confidence claims (contradicted or unsupported) from the trust audit logs,
     and generates verification questions for them.
-    
-    Each item in the output has:
-    {
-        "sentence_idx": int,
-        "claim": str,
-        "question": str,
-        "original_citations": list[int]
-    }
+    If force_all is True, generates verification questions for all sentences.
     """
     verification_targets = []
     
-    # 1. Filter out sentences that have low confidence (is_contradicted or low entailment)
+    # 1. Filter out sentences that have low confidence or all if force_all
     for log in sentence_logs:
         is_weak = False
         reason = ""
         
-        if log["is_contradicted"]:
+        if force_all:
+            is_weak = True
+            reason = "Deep Audit"
+        elif log.get("is_contradicted"):
             is_weak = True
             reason = "Contradicted"
-        elif log["citation_entailment"] < 0.4:
+        elif log.get("citation_entailment", 1.0) < 0.6:
             is_weak = True
             reason = "Low Support"
             
@@ -37,7 +34,7 @@ def generate_verification_questions(
                 "sentence_idx": log["index"],
                 "claim": log["clean_sentence"],
                 "reason": reason,
-                "original_citations": log["citations"]
+                "original_citations": log.get("citations", [])
             })
             
     if not verification_targets:

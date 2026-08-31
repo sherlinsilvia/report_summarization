@@ -494,6 +494,18 @@ with col_right:
                         unsafe_allow_html=True
                     )
                     
+            # Low Confidence Clinical Protocol Warning
+            if has_disc and final_score < trust_threshold:
+                st.markdown("---")
+                st.warning(
+                    f"⚠️ **Clinical Safety Protocol Triggered (Score: {final_score*100:.0f}% < {trust_threshold*100:.0f}% Threshold)**\n\n"
+                    "The self-correction audit detected lower confidence or ungrounded claims in this report.\n\n"
+                    "**Recommended Next Steps:**\n"
+                    "- 🔍 **Review Evidence Citations:** Hover over citation badges `[#0]` in the summary below to verify original report excerpts.\n"
+                    "- 🎯 **Adjust Sidebar Settings:** Lower the Trust Threshold slider or Citation Weight if evaluating brief notes.\n"
+                    "- 🩺 **Physician Clinical Override:** Perform manual review and clinical sign-off before discharging patient."
+                )
+                    
             # 2. Main Summary Tab System (Doctor View vs Patient View)
             st.markdown("### 📝 Clinical & Patient Discharge Summaries")
             
