@@ -225,6 +225,22 @@ try:
             mime="text/csv",
             help="Click to download the correct MIMIC-IV sample notes CSV database."
         )
+
+    # Download Conference Paper PDF button
+    paper_pdf_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "TrustMed_Conference_Paper.pdf")
+    if os.path.exists(paper_pdf_path):
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### 📄 Conference Publication")
+        with open(paper_pdf_path, "rb") as pf:
+            pdf_bytes = pf.read()
+        st.sidebar.download_button(
+            label="📥 Download Conference Paper (PDF)",
+            data=pdf_bytes,
+            file_name="TrustMed_Conference_Paper.pdf",
+            mime="application/pdf",
+            type="primary",
+            help="Download the complete IEEE 2-column research conference paper."
+        )
 except Exception as e:
     pass
 
