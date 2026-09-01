@@ -312,23 +312,49 @@ def run_disc_bridge(session_id: str, draft_summary: str) -> Tuple[bool, Dict[str
 
     # In-process DISC execution
     try:
-        cache = IN_PROCESS_SESSION_CACHE.get(session_id, {})
-        retrieved_chunks = cache.get("retrieved_chunks")
-
-        if not retrieved_chunks:
+        if session_id not in IN_PROCESS_SESSION_CACHE:
             chunks_file = os.path.join(config.PROCESSED_DIR, f"{session_id}.json")
+            if not os.path.exists(chunks_file):
+                return False, {}, "Session data not found. Please upload report again."
             with open(chunks_file, "r", encoding="utf-8") as f:
-                retrieved_chunks = json.load(f)[:5]
+                chunks = json.load(f)
 
+            chunk_texts = [c["text"] for c in chunks]
+            embeddings = embed_text(chunk_texts)
+            faiss_index = FAISSIndex(dimension=embeddings.shape[1])
+            faiss_path = os.path.join(config.EMBEDDINGS_DIR, session_id)
+            if os.path.exists(faiss_path + ".index"):
+                faiss_index.load(faiss_path)
+            else:
+                faiss_index.add_embeddings(embeddings)
+
+            bm25_index = BM25Index()
+            bm25_index.build(chunk_texts)
+
+            IN_PROCESS_SESSION_CACHE[session_id] = {
+                "chunks": chunks,
+                "faiss": faiss_index,
+                "bm25": bm25_index
+            }
+
+        cache = IN_PROCESS_SESSION_CACHE[session_id]
+        chunks = cache.get("chunks", [])
+        retrieved_chunks = cache.get("retrieved_chunks", chunks[:5])
         faiss_index = cache.get("faiss")
         bm25_index = cache.get("bm25")
 
         disc_result = run_disc_pipeline(
-            draft_summary=draft_summary,
-            retrieved_chunks=retrieved_chunks,
+            initial_summary=draft_summary,
             faiss_index=faiss_index,
-            bm25_index=bm25_index
+            bm25_index=bm25_index,
+            chunks=chunks,
+            retrieved_chunks=retrieved_chunks
         )
+
+        from summarization.summarizer import generate_patient_summary
+        final_patient_summary = generate_patient_summary(disc_result["final_summary"])
+        disc_result["final_patient_summary"] = final_patient_summary
+
         return True, disc_result, None
 
     except Exception as e:
