@@ -225,22 +225,6 @@ try:
             mime="text/csv",
             help="Click to download the correct MIMIC-IV sample notes CSV database."
         )
-
-    # Download Conference Paper PDF button
-    paper_pdf_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "TrustMed_Conference_Paper.pdf")
-    if os.path.exists(paper_pdf_path):
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("### 📄 Conference Publication")
-        with open(paper_pdf_path, "rb") as pf:
-            pdf_bytes = pf.read()
-        st.sidebar.download_button(
-            label="📥 Download Conference Paper (PDF)",
-            data=pdf_bytes,
-            file_name="TrustMed_Conference_Paper.pdf",
-            mime="application/pdf",
-            type="primary",
-            help="Download the complete IEEE 2-column research conference paper."
-        )
 except Exception as e:
     pass
 
@@ -378,7 +362,21 @@ with col_left:
     step_html += '</div>'
     st.markdown(step_html, unsafe_allow_html=True)
     
-    # Session Reset
+    # Session Reset & Research Paper Download
+    st.markdown("---")
+    st.markdown("### 📚 Project Documentation")
+    paper_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "TrustMed_Reference_Paper.pdf")
+    if os.path.exists(paper_file_path):
+        with open(paper_file_path, "rb") as pf:
+            pdf_bytes = pf.read()
+        st.download_button(
+            label="📄 Download Reference Paper (8 Pages PDF)",
+            data=pdf_bytes,
+            file_name="TrustMed_Reference_Paper.pdf",
+            mime="application/pdf",
+            use_container_width=True
+        )
+    
     if st.session_state.session_id:
         if st.button("🗑️ Reset Application", use_container_width=True):
             for key in list(st.session_state.keys()):
