@@ -16,112 +16,212 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Premium Styling
+# Custom Premium Styling & Responsive Mobile/Desktop CSS
 st.markdown("""
 <style>
     /* Google Fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
     
-    html, body, [class*="css"] {
+    html, body, [class*="css"], .stApp {
         font-family: 'Plus Jakarta Sans', sans-serif;
     }
     
-    /* Title and Headers */
+    /* Main Title and Headers */
     .main-title {
         font-family: 'Outfit', sans-serif;
-        background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+        background: linear-gradient(135deg, #38bdf8 0%, #10b981 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 700;
-        font-size: 3rem;
-        margin-bottom: 0.5rem;
+        font-weight: 800;
+        font-size: 2.6rem;
+        margin-bottom: 0.25rem;
+        letter-spacing: -0.02em;
     }
     
     .subtitle {
-        font-size: 1.1rem;
-        color: #64748b;
-        margin-bottom: 2rem;
+        font-size: 1rem;
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
     }
     
-    /* Glassmorphism Cards */
+    /* Responsive Glassmorphism Cards */
     .glass-card {
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
+        background: rgba(30, 41, 59, 0.7);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 1.5rem;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05);
-        margin-bottom: 1.5rem;
+        border-radius: 14px;
+        padding: 1.25rem;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        margin-bottom: 1rem;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    
+    .glass-card:hover {
+        border-color: rgba(56, 189, 248, 0.4);
     }
     
     .metric-title {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         color: #94a3b8;
         text-transform: uppercase;
-        font-weight: 600;
-        letter-spacing: 0.05em;
+        font-weight: 700;
+        letter-spacing: 0.06em;
     }
     
     .metric-value {
-        font-size: 2.2rem;
-        font-weight: 700;
-        margin: 0.3rem 0;
+        font-size: 2.1rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        margin: 0.2rem 0;
     }
     
     /* Trust Badges and Highlights */
     .badge-high {
-        background-color: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-        padding: 0.25rem 0.75rem;
+        background-color: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+        padding: 0.3rem 0.85rem;
         border-radius: 9999px;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.85rem;
         display: inline-block;
+        border: 1px solid rgba(16, 185, 129, 0.35);
     }
     
     .badge-low {
-        background-color: rgba(239, 68, 68, 0.15);
-        color: #ef4444;
-        padding: 0.25rem 0.75rem;
+        background-color: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+        padding: 0.3rem 0.85rem;
         border-radius: 9999px;
-        font-weight: 600;
+        font-weight: 700;
         font-size: 0.85rem;
         display: inline-block;
+        border: 1px solid rgba(239, 68, 68, 0.35);
     }
     
     /* Interactive Citation styling */
     .citation-badge:hover {
         transform: scale(1.15);
         background-color: #2563eb !important;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
     }
     
     /* Steps styling */
     .step-container {
         display: flex;
-        justify-content: space-between;
-        margin-bottom: 2rem;
-        background: #f8fafc;
-        padding: 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+        background: rgba(15, 23, 42, 0.65);
+        padding: 0.75rem;
         border-radius: 12px;
-        border: 1px solid #e2e8f0;
+        border: 1px solid rgba(255, 255, 255, 0.08);
     }
     
     .step-item {
+        flex: 1 1 calc(50% - 0.5rem);
+        min-width: 110px;
         text-align: center;
-        flex: 1;
-        font-size: 0.85rem;
+        font-size: 0.78rem;
         font-weight: 600;
-        color: #94a3b8;
+        padding: 0.5rem 0.4rem;
+        border-radius: 8px;
+        color: #64748b;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
     }
     
     .step-active {
-        color: #3b82f6;
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.12);
+        border-color: rgba(56, 189, 248, 0.4);
+        font-weight: 700;
     }
     
     .step-completed {
         color: #10b981;
+        background: rgba(16, 185, 129, 0.12);
+        border-color: rgba(16, 185, 129, 0.35);
+        font-weight: 700;
+    }
+
+    /* Feature Cards */
+    .feature-card {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 1.25rem;
+        min-height: 190px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        transition: all 0.25s ease;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-4px);
+        border-color: #38bdf8;
+        box-shadow: 0 10px 25px rgba(56, 189, 248, 0.15);
+    }
+
+    /* Submetric Grid Cards */
+    .submetric-card {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        padding: 0.85rem 0.5rem;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .submetric-card:hover {
+        border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .submetric-title {
+        font-size: 0.72rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+    
+    .submetric-value {
+        font-size: 1.25rem;
+        font-weight: 800;
+        font-family: 'Outfit', sans-serif;
+        color: #f8fafc;
+        margin-top: 2px;
+    }
+
+    /* Mobile Responsive Optimizations */
+    @media (max-width: 768px) {
+        .main-title {
+            font-size: 1.85rem !important;
+        }
+        .subtitle {
+            font-size: 0.88rem !important;
+            margin-bottom: 1rem !important;
+        }
+        .step-item {
+            flex: 1 1 100% !important;
+            font-size: 0.82rem !important;
+        }
+        .metric-value {
+            font-size: 1.6rem !important;
+        }
+        .feature-card {
+            min-height: auto !important;
+            margin-bottom: 0.75rem !important;
+        }
+        .glass-card {
+            padding: 1rem !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -362,21 +462,7 @@ with col_left:
     step_html += '</div>'
     st.markdown(step_html, unsafe_allow_html=True)
     
-    # Session Reset & Research Paper Download
-    st.markdown("---")
-    st.markdown("### 📚 Project Documentation")
-    paper_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "TrustMed_Reference_Paper.pdf")
-    if os.path.exists(paper_file_path):
-        with open(paper_file_path, "rb") as pf:
-            pdf_bytes = pf.read()
-        st.download_button(
-            label="📄 Download Reference Paper (8 Pages PDF)",
-            data=pdf_bytes,
-            file_name="TrustMed_Reference_Paper.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-    
+    # Session Reset
     if st.session_state.session_id:
         if st.button("🗑️ Reset Application", use_container_width=True):
             for key in list(st.session_state.keys()):
@@ -500,9 +586,9 @@ with col_right:
             for idx, (name, val) in enumerate(sub_metrics):
                 with sc_cols[idx]:
                     st.markdown(
-                        f'<div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; text-align: center;">'
-                        f'<div style="font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 600;">{name}</div>'
-                        f'<div style="font-size: 1.2rem; font-weight: bold; color: #1e293b; margin-top: 2px;">{val*100:.0f}%</div>'
+                        f'<div class="submetric-card">'
+                        f'<div class="submetric-title">{name}</div>'
+                        f'<div class="submetric-value">{val*100:.0f}%</div>'
                         f'</div>',
                         unsafe_allow_html=True
                     )
@@ -676,32 +762,32 @@ with col_right:
         st.info("👈 Please upload a clinical report PDF or TXT file on the sidebar/left panel, then click 'Process & Index Document' to start.")
         
         # Display features showcase
-        st.markdown("### How TrustMed Works")
+        st.markdown("### 💡 How TrustMed Works")
         f_col1, f_col2, f_col3 = st.columns(3)
         with f_col1:
             st.markdown(
-                f'<div class="glass-card" style="height: 180px;">'
-                f'<div style="font-size: 2rem; margin-bottom: 5px;">🔍</div>'
-                f'<strong>Hybrid Retrieval</strong><br>'
-                f'<span style="font-size: 0.85rem; color: #64748b;">Combines dense vector search (FAISS + MiniLM) for semantic context and BM25 sparse search for exact keyword matching.</span>'
+                f'<div class="feature-card">'
+                f'<div style="font-size: 2rem; margin-bottom: 8px;">🔍</div>'
+                f'<strong style="font-size: 1.05rem; color: #38bdf8;">Hybrid Retrieval</strong>'
+                f'<p style="font-size: 0.85rem; color: #94a3b8; margin-top: 6px; line-height: 1.5;">Combines dense vector search (FAISS + MiniLM) for semantic context and BM25 sparse search for exact clinical keyword matching.</p>'
                 f'</div>',
                 unsafe_allow_html=True
             )
         with f_col2:
             st.markdown(
-                f'<div class="glass-card" style="height: 180px;">'
-                f'<div style="font-size: 2rem; margin-bottom: 5px;">📊</div>'
-                f'<strong>Composite Trust Scoring</strong><br>'
-                f'<span style="font-size: 0.85rem; color: #64748b;">Computes four trust dimensions (Retrieval match, Hallucination checks, Citation validity, Coverage index) using NLI zero-shot classification.</span>'
+                f'<div class="feature-card">'
+                f'<div style="font-size: 2rem; margin-bottom: 8px;">📊</div>'
+                f'<strong style="font-size: 1.05rem; color: #34d399;">Composite Trust Scoring</strong>'
+                f'<p style="font-size: 0.85rem; color: #94a3b8; margin-top: 6px; line-height: 1.5;">Computes four trust dimensions (Retrieval match, Hallucination checks, Citation validity, Section coverage) using NLI zero-shot verification.</p>'
                 f'</div>',
                 unsafe_allow_html=True
             )
         with f_col3:
             st.markdown(
-                f'<div class="glass-card" style="height: 180px;">'
-                f'<div style="font-size: 2rem; margin-bottom: 5px;">🛡️</div>'
-                f'<strong>DISC Self-Correction</strong><br>'
-                f'<span style="font-size: 0.85rem; color: #64748b;">Audits low-confidence statements dynamically, creates targeted query verification questions, retrieves fresh evidence, and rewrites only incorrect claims.</span>'
+                f'<div class="feature-card">'
+                f'<div style="font-size: 2rem; margin-bottom: 8px;">🛡️</div>'
+                f'<strong style="font-size: 1.05rem; color: #6366f1;">DISC Self-Correction</strong>'
+                f'<p style="font-size: 0.85rem; color: #94a3b8; margin-top: 6px; line-height: 1.5;">Audits low-confidence statements dynamically, generates targeted query questions, retrieves fresh evidence, and rewrites ungrounded claims.</p>'
                 f'</div>',
                 unsafe_allow_html=True
             )

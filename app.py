@@ -344,17 +344,3 @@ def run_disc(req: DISCRequest):
         return disc_results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DISC module run failed: {e}")
-
-@app.get("/download_paper")
-def download_paper():
-    """
-    Download the generated 8-page IEEE reference research paper for TrustMed.
-    """
-    paper_path = os.path.join(os.path.dirname(__file__), "TrustMed_Reference_Paper.pdf")
-    if not os.path.exists(paper_path):
-        raise HTTPException(status_code=404, detail="Paper PDF not found.")
-    return FileResponse(
-        path=paper_path,
-        filename="TrustMed_Reference_Paper.pdf",
-        media_type="application/pdf"
-    )
