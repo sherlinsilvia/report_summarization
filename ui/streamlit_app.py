@@ -140,7 +140,7 @@ st.markdown("""
 
 # Helper function for quick executive summary paragraph
 def extract_quick_understandable_paragraph(doctor_summary: str, patient_summary: str) -> str:
-    cleaned = clean_markdown_and_format_html(doctor_summary or "", is_dark_bg=False)
+    cleaned = clean_markdown_and_format_html(doctor_summary or "")
     # Filter out repetitive disclaimers or citation brackets from executive paragraph
     clean_text_only = re.sub(r'<[^>]+>', ' ', cleaned)
     clean_text_only = re.sub(r'\[\d+\]', '', clean_text_only)
@@ -150,7 +150,7 @@ def extract_quick_understandable_paragraph(doctor_summary: str, patient_summary:
     if len(sentences) >= 2:
         return " ".join(sentences[:4])
         
-    clean_p = clean_markdown_and_format_html(patient_summary or "", is_dark_bg=False)
+    clean_p = clean_markdown_and_format_html(patient_summary or "")
     clean_p_text = re.sub(r'<[^>]+>', ' ', clean_p)
     clean_p_text = re.sub(r'\[\d+\]', '', clean_p_text)
     p_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_p_text) if len(s.strip()) > 20]
@@ -415,7 +415,7 @@ with col_right:
                 
             with t2:
                 st.caption("Detailed technical discharge summary formatted with interactive citation tooltips.")
-                html_sum, cited_list = format_summary_citations_html(final_doctor_summary, st.session_state.retrieved_chunks, is_dark_bg=False)
+                html_sum, cited_list = format_summary_citations_html(final_doctor_summary, st.session_state.retrieved_chunks)
                 st.markdown(
                     f'<div class="summary-card-light">'
                     f'{html_sum.replace(chr(10), "<br>")}'
@@ -435,7 +435,7 @@ with col_right:
                         
             with t3:
                 st.caption("Simplified Grade-6 language designed for patient home care.")
-                html_pat, _ = format_summary_citations_html(final_patient_summary, st.session_state.retrieved_chunks, is_dark_bg=False)
+                html_pat, _ = format_summary_citations_html(final_patient_summary, st.session_state.retrieved_chunks)
                 st.markdown(
                     f'<div class="summary-card-light" style="border: 2px solid #0284c7 !important;">'
                     f'{html_pat.replace(chr(10), "<br>")}'

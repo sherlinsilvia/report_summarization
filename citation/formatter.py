@@ -1,12 +1,17 @@
 import re
 
-def clean_markdown_and_format_html(text: str, is_dark_bg: bool = False) -> str:
+def clean_markdown_and_format_html(text: str, *args, **kwargs) -> str:
     """
     Parses Markdown syntax like 1. **Heading**: or **text** and converts them into
     clean, styled HTML elements with crisp high-contrast visibility.
+    Accepts *args, **kwargs to guarantee 100% backward compatibility during hot-reloads.
     """
+    is_dark_bg = kwargs.get("is_dark_bg", False)
+    if args and isinstance(args[0], bool):
+        is_dark_bg = args[0]
+
     # 1. Remove raw context header leak prefixes if any remain
-    text = re.sub(r'\(Page\s+\d+,\s+Section:[^)]+\):\s*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\(Page\s+\d+,\s+Section:[^)]+\):\s*', '', str(text or ""), flags=re.IGNORECASE)
     
     heading_color = "#38bdf8" if is_dark_bg else "#0369a1"
     border_color = "rgba(255,255,255,0.15)" if is_dark_bg else "#cbd5e1"
@@ -41,13 +46,19 @@ def clean_markdown_and_format_html(text: str, is_dark_bg: bool = False) -> str:
 def format_summary_citations_html(
     summary_text: str,
     retrieved_chunks: list[dict],
-    is_dark_bg: bool = False
+    *args,
+    **kwargs
 ) -> tuple[str, list[dict]]:
     """
     Finds brackets like [0], [1] in the summary and replaces them with beautiful
     HTML tooltips/badges.
     Also compiles a list of cited chunks for the reference list.
+    Accepts *args, **kwargs to guarantee 100% backward compatibility during hot-reloads.
     """
+    is_dark_bg = kwargs.get("is_dark_bg", False)
+    if args and isinstance(args[0], bool):
+        is_dark_bg = args[0]
+
     # 1. Clean Markdown headers and bold text
     formatted_text = clean_markdown_and_format_html(summary_text, is_dark_bg=is_dark_bg)
     
