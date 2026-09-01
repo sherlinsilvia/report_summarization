@@ -5,6 +5,23 @@ import os
 import re
 from citation.formatter import format_summary_citations_html, clean_markdown_and_format_html
 
+try:
+    from ui.backend_bridge import (
+        upload_and_index_report,
+        parse_mimic_csv,
+        process_mimic_selection,
+        generate_summary_bridge,
+        run_disc_bridge
+    )
+except ImportError:
+    from backend_bridge import (
+        upload_and_index_report,
+        parse_mimic_csv,
+        process_mimic_selection,
+        generate_summary_bridge,
+        run_disc_bridge
+    )
+
 # API Endpoint
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
@@ -371,18 +388,13 @@ with col_left:
             if st.session_state.mimic_patients is None:
                 if st.button("🔍 Parse MIMIC-IV Metadata", use_container_width=True):
                     with st.spinner("Parsing patients and admissions..."):
-                        try:
-                            files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
-                            res = requests.post(f"{API_URL}/parse_mimic_metadata", files=files)
-                            if res.status_code == 200:
-                                data = res.json()
-                                st.session_state.mimic_patients = data["patients"]
-                                st.session_state.mimic_session_id = data["session_id"]
-                                st.rerun()
-                            else:
-                                st.error(f"Error parsing MIMIC CSV: {res.text}")
-                        except Exception as e:
-                            st.error(f"Failed to connect to API: {e}")
+                        success, data, err = parse_mimic_csv(uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)
+                        if success:
+                            st.session_state.mimic_patients = data["patients"]
+                            st.session_state.mimic_session_id = data["session_id"]
+                            st.rerun()
+                        else:
+                            st.error(f"Error parsing MIMIC CSV: {err}")
             
             # Step B: Patient Selection Dropdown
             if st.session_state.mimic_patients:
@@ -402,48 +414,34 @@ with col_left:
                 if st.button("🚀 Process & Index Selected Patient", use_container_width=True):
                     st.session_state.pipeline_step = 1
                     with st.spinner("Filtering patient note and building indices..."):
-                        try:
-                            res = requests.post(
-                                f"{API_URL}/process_mimic_report",
-                                json={
-                                    "session_id": st.session_state.mimic_session_id,
-                                    "subject_id": selected_patient["subject_id"],
-                                    "hadm_id": selected_patient["hadm_id"]
-                                }
-                            )
-                            if res.status_code == 200:
-                                data = res.json()
-                                st.session_state.session_id = data["session_id"]
-                                st.success(f"Successfully processed patient #{selected_patient['subject_id']}! Indexed {data['num_chunks']} chunks.")
-                                st.session_state.pipeline_step = 2
-                            else:
-                                st.error(f"Failed to process patient report: {res.text}")
-                                st.session_state.pipeline_step = 0
-                        except Exception as e:
-                            st.error(f"Connection failure: {e}")
+                        success, data, err = process_mimic_selection(
+                            st.session_state.mimic_session_id,
+                            selected_patient["subject_id"],
+                            selected_patient["hadm_id"]
+                        )
+                        if success:
+                            st.session_state.session_id = data["session_id"]
+                            st.success(f"Successfully processed patient #{selected_patient['subject_id']}! Indexed {data['num_chunks']} chunks.")
+                            st.session_state.pipeline_step = 2
+                        else:
+                            st.error(f"Failed to process patient report: {err}")
                             st.session_state.pipeline_step = 0
         else:
             # Standard PDF/TXT flow
             if st.button("🚀 Process & Index Document", use_container_width=True):
                 st.session_state.pipeline_step = 1
                 with st.spinner("Parsing report sections, splitting sentences, and indexing dense/sparse representations..."):
-                    files = {"file": (uploaded_file.name, uploaded_file.getvalue(), uploaded_file.type)}
-                    try:
-                        res = requests.post(f"{API_URL}/upload_report", files=files)
-                        if res.status_code == 200:
-                            data = res.json()
-                            st.session_state.session_id = data["session_id"]
-                            st.success(f"Successfully processed **{data['file_name']}**! Indexed {data['num_chunks']} document chunks.")
-                            st.session_state.pipeline_step = 2
-                        else:
-                            try:
-                                err_detail = res.json().get("detail", res.text)
-                            except Exception:
-                                err_detail = res.text
-                            st.error(f"⛔ **Upload Rejected**: {err_detail}")
-                            st.session_state.pipeline_step = 0
-                    except Exception as e:
-                        st.error(f"Could not connect to FastAPI server at {API_URL}. {e}")
+                    success, data, err = upload_and_index_report(
+                        uploaded_file.name,
+                        uploaded_file.getvalue(),
+                        uploaded_file.type
+                    )
+                    if success:
+                        st.session_state.session_id = data["session_id"]
+                        st.success(f"Successfully processed **{data['file_name']}**! Indexed {data['num_chunks']} document chunks.")
+                        st.session_state.pipeline_step = 2
+                    else:
+                        st.error(f"⛔ **Upload Issue**: {err}")
                         st.session_state.pipeline_step = 0
                 
     # Stepper visualization
@@ -477,48 +475,35 @@ with col_right:
         with act_col1:
             if st.button("✨ Generate Draft Summary", use_container_width=True, type="primary"):
                 with st.spinner("Querying hybrid index to generate Physician and Patient summaries..."):
-                    try:
-                        res = requests.post(
-                            f"{API_URL}/generate_summary",
-                            json={"session_id": st.session_state.session_id}
-                        )
-                        if res.status_code == 200:
-                            data = res.json()
-                            st.session_state.doctor_summary = data.get("doctor_summary", data["draft_summary"])
-                            st.session_state.patient_summary = data.get("patient_summary", "Patient explanation available.")
-                            st.session_state.draft_summary = st.session_state.doctor_summary
-                            st.session_state.trust_results = data["trust_results"]
-                            st.session_state.retrieved_chunks = data["retrieved_chunks"]
-                            st.session_state.pipeline_step = 3
-                            st.session_state.disc_results = None # clear any past disc
-                            st.success("Doctor and Patient summaries generated successfully!")
-                        else:
-                            st.error(f"Error generating summary: {res.text}")
-                    except Exception as e:
-                        st.error(f"Failed to generate summary: {e}")
+                    success, data, err = generate_summary_bridge(st.session_state.session_id)
+                    if success:
+                        st.session_state.doctor_summary = data.get("doctor_summary", data["draft_summary"])
+                        st.session_state.patient_summary = data.get("patient_summary", "Patient explanation available.")
+                        st.session_state.draft_summary = st.session_state.doctor_summary
+                        st.session_state.trust_results = data["trust_results"]
+                        st.session_state.retrieved_chunks = data["retrieved_chunks"]
+                        st.session_state.pipeline_step = 3
+                        st.session_state.disc_results = None # clear any past disc
+                        st.success("Doctor and Patient summaries generated successfully!")
+                    else:
+                        st.error(f"Error generating summary: {err}")
                         
         with act_col2:
             # Only enable DISC if draft summary is present
             disc_disabled = st.session_state.doctor_summary is None
             if st.button("🛡️ Run DISC Verification", use_container_width=True, disabled=disc_disabled):
                 with st.spinner("Starting Dynamic Self-Correction loop. Auditing claims, retrieving evidence, verifying, and rewriting..."):
-                    try:
-                        res = requests.post(
-                            f"{API_URL}/run_disc",
-                            json={
-                                "session_id": st.session_state.session_id,
-                                "draft_summary": st.session_state.doctor_summary
-                            }
-                        )
-                        if res.status_code == 200:
-                            st.session_state.disc_results = res.json()
-                            if "final_patient_summary" in st.session_state.disc_results:
-                                st.session_state.patient_summary = st.session_state.disc_results["final_patient_summary"]
-                            st.success("Verification and correction complete!")
-                        else:
-                            st.error(f"Error running DISC verification: {res.text}")
-                    except Exception as e:
-                        st.error(f"Failed to run DISC: {e}")
+                    success, data, err = run_disc_bridge(
+                        st.session_state.session_id,
+                        st.session_state.doctor_summary
+                    )
+                    if success:
+                        st.session_state.disc_results = data
+                        if "final_patient_summary" in st.session_state.disc_results:
+                            st.session_state.patient_summary = st.session_state.disc_results["final_patient_summary"]
+                        st.success("Verification and correction complete!")
+                    else:
+                        st.error(f"Error running DISC verification: {err}")
                         
         # Display Metrics / Results
         if st.session_state.doctor_summary:
