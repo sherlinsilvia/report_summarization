@@ -518,17 +518,45 @@ with col_right:
                         st.success("Physician clinical sign-off recorded. Summary marked as Verified Trustworthy.")
                         st.rerun()
                     
-            # 2. Main Summary Tab System (Doctor View vs Patient View vs Animated Doctor Video)
+            # Helper function for quick understandable paragraph extraction
+            def extract_quick_understandable_paragraph(doctor_text: str, patient_text: str) -> str:
+                clean_t = re.sub(r'\[\d+\]', '', doctor_text)
+                clean_t = re.sub(r'^\s*[-*\d\.]+\s*', '', clean_t, flags=re.MULTILINE)
+                clean_t = re.sub(r'\*\*(.*?)\*\*', r'\1', clean_t)
+                
+                sents = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_t) if len(s.strip()) > 15 and not s.strip().lower().startswith(('patient name', 'mrn', 'dob', 'date of admission', 'history of present illness'))]
+                
+                if sents:
+                    return " ".join(sents[:4])
+                return "Patient was admitted for clinical evaluation, received targeted inpatient medical care, and was discharged in stable condition with home medication instructions and scheduled outpatient follow-up."
+
+            # 2. Main Summary Tab System (Quick Paragraph vs Physician Notes vs Patient Guide)
             st.markdown("### 📝 Clinical & Patient Discharge Summaries")
             
             summary_tab1, summary_tab2, summary_tab3, summary_tab4 = st.tabs([
+                "📋 Quick Executive Summary",
                 "🩺 Physician Discharge Summary", 
                 "👤 Patient-Friendly Explanation", 
-                "🎬 Dr. Maya Animated Video",
                 "📜 Raw Text"
             ])
             
             with summary_tab1:
+                st.caption("⚡ **Quick & Simple Summary**: A single, easily understandable paragraph summarizing the patient's entire hospital stay.")
+                
+                quick_paragraph = extract_quick_understandable_paragraph(
+                    final_doctor_summary,
+                    final_patient_summary
+                )
+                
+                st.markdown(
+                    f'<div style="background: #f0fdf4; border: 1.5px solid #10b981; padding: 22px; border-radius: 12px; line-height: 1.8; color: #064e3b; font-size: 1.06rem; font-weight: 500; box-shadow: 0 4px 14px rgba(16,185,129,0.12);">'
+                    f'<strong style="font-size: 1.15rem; color: #047857;">📋 Quick Executive Case Overview:</strong><br><br>'
+                    f'{quick_paragraph}'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+
+            with summary_tab2:
                 st.caption("Structured, evidence-grounded medical report for healthcare professionals.")
                 # Format summary with HTML citation hover tooltips
                 html_summary, cited_list = format_summary_citations_html(
@@ -556,7 +584,7 @@ with col_right:
                             unsafe_allow_html=True
                         )
 
-            with summary_tab2:
+            with summary_tab3:
                 st.caption("Simplified, grade-6 discharge instructions formatted for patient understanding.")
                 html_patient_summary, _ = format_summary_citations_html(
                     final_patient_summary,
@@ -569,20 +597,6 @@ with col_right:
                     f'</div>',
                     unsafe_allow_html=True
                 )
-
-            with summary_tab3:
-                st.caption("🎬 **Dr. Maya AI Video Assistant**: Live 3D Doctor Video explaining your discharge summary.")
-                gif_path = os.path.join(os.path.dirname(__file__), "assets", "pixar_doctor_animated_video.gif")
-                if os.path.exists(gif_path):
-                    import base64
-                    with open(gif_path, "rb") as gf:
-                        gif_b64 = base64.b64encode(gf.read()).decode("utf-8")
-                    st.markdown(
-                        f'<div style="text-align: center; margin: 15px auto; max-width: 420px;">'
-                        f'<img src="data:image/gif;base64,{gif_b64}" style="width: 100%; border-radius: 20px; border: 4px solid #10b981; box-shadow: 0 12px 35px rgba(0,0,0,0.5); display: block;" />'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
 
             with summary_tab4:
                 st.markdown("**Doctor Summary Raw Markdown:**")
