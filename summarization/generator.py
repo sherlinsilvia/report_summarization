@@ -251,7 +251,7 @@ def generate_mock_response(prompt: str) -> str:
             inv_text = format_section("inv", "Radiological visual evaluation performed across anatomical landmarks.", 0)
             treat_text = "Non-invasive diagnostic scanning completed without adverse event. [0]"
             crs_text = "Patient remained stable during image acquisition. [0]"
-            meds_text = format_section("meds", "Medications managed as per outpatient clinical prescription.", last_chunk_id)
+            meds_text = format_section("meds", "No discharge medications documented in the uploaded imaging study.", last_chunk_id)
             fup_text = format_section("fup", "Follow-up recommended with attending physician for formal radiologist sign-off.", last_chunk_id)
         else:
             p_info_text = format_section("p_info", "Patient clinical record reviewed.", first_chunk_id)
@@ -261,7 +261,7 @@ def generate_mock_response(prompt: str) -> str:
             inv_text = format_section("inv", "Diagnostic tests and laboratory evaluations performed.", min(2, last_chunk_id))
             treat_text = format_section("treat", "Medical therapy and interventions administered.", min(2, last_chunk_id))
             crs_text = format_section("crs", "Patient monitored with clinical improvement.", min(3, last_chunk_id))
-            meds_text = format_section("meds", "Discharge medications prescribed as indicated.", min(4, last_chunk_id))
+            meds_text = format_section("meds", "No discharge medications documented in the uploaded record.", last_chunk_id)
             fup_text = format_section("fup", "Follow-up recommended in outpatient clinic.", last_chunk_id)
 
         summary = (

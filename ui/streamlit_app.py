@@ -14,7 +14,8 @@ try:
         process_mimic_selection,
         generate_summary_bridge,
         run_disc_bridge,
-        generate_pdf_report_bytes
+        generate_pdf_report_bytes,
+        IN_PROCESS_SESSION_CACHE
     )
 except ImportError:
     from backend_bridge import (
@@ -25,7 +26,8 @@ except ImportError:
         process_mimic_selection,
         generate_summary_bridge,
         run_disc_bridge,
-        generate_pdf_report_bytes
+        generate_pdf_report_bytes,
+        IN_PROCESS_SESSION_CACHE
     )
 
 # API Endpoint
@@ -115,25 +117,34 @@ st.markdown("""
         background: rgba(16, 185, 129, 0.15);
         color: #10b981;
     }
-    .summary-card-light {
+    
+    /* Ensure all tabs and markdown text have maximum visibility and contrast */
+    .stTabs [data-baseweb="tab-panel"] {
         background: #ffffff !important;
-        border: 1.5px solid #cbd5e1;
-        padding: 26px;
-        border-radius: 14px;
-        line-height: 1.8;
+        border: 2px solid #cbd5e1 !important;
+        border-radius: 14px !important;
+        padding: 24px !important;
         color: #0f172a !important;
-        font-size: 1.02rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
     }
-    .summary-card-light h4 {
+    .stTabs [data-baseweb="tab-panel"] p, 
+    .stTabs [data-baseweb="tab-panel"] div, 
+    .stTabs [data-baseweb="tab-panel"] span,
+    .stTabs [data-baseweb="tab-panel"] li {
+        color: #0f172a !important;
+        font-size: 1.02rem !important;
+        line-height: 1.75 !important;
+    }
+    .stTabs [data-baseweb="tab-panel"] h1, 
+    .stTabs [data-baseweb="tab-panel"] h2, 
+    .stTabs [data-baseweb="tab-panel"] h3, 
+    .stTabs [data-baseweb="tab-panel"] h4 {
         color: #0369a1 !important;
         font-weight: 700 !important;
     }
-    .summary-card-light strong {
+    .stTabs [data-baseweb="tab-panel"] strong {
         color: #0284c7 !important;
-    }
-    .summary-card-light div {
-        color: #1e293b !important;
+        font-weight: 700 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -141,7 +152,6 @@ st.markdown("""
 # Helper function for quick executive summary paragraph
 def extract_quick_understandable_paragraph(doctor_summary: str, patient_summary: str) -> str:
     cleaned = clean_markdown_and_format_html(doctor_summary or "")
-    # Filter out repetitive disclaimers or citation brackets from executive paragraph
     clean_text_only = re.sub(r'<[^>]+>', ' ', cleaned)
     clean_text_only = re.sub(r'\[\d+\]', '', clean_text_only)
     clean_text_only = re.sub(r'Clinical Disclaimers & Uncertainties:.*', '', clean_text_only)
@@ -275,6 +285,7 @@ with col_left:
                             st.session_state.session_id = data["session_id"]
                             st.success(f"Successfully indexed {data['num_chunks']} chunks!")
                             st.session_state.pipeline_step = 2
+                            st.rerun()
                         else:
                             st.error(f"Error: {err}")
                             st.session_state.pipeline_step = 0
@@ -289,6 +300,7 @@ with col_left:
                         st.session_state.session_id = data["session_id"]
                         st.success(f"Successfully processed {len(uploaded_files)} file(s)! Indexed {data['num_chunks']} evidence chunks.")
                         st.session_state.pipeline_step = 2
+                        st.rerun()
                     else:
                         st.error(f"⛔ Analysis Error: {err}")
                         st.session_state.pipeline_step = 0
@@ -326,6 +338,7 @@ with col_right:
                         st.session_state.pipeline_step = 3
                         st.session_state.disc_results = None
                         st.success("Physician discharge notes & patient explanation synthesized!")
+                        st.rerun()
                     else:
                         st.error(f"Error: {err}")
                         
@@ -339,6 +352,7 @@ with col_right:
                         if "final_patient_summary" in st.session_state.disc_results:
                             st.session_state.patient_summary = st.session_state.disc_results["final_patient_summary"]
                         st.success("Verification and correction complete!")
+                        st.rerun()
                     else:
                         st.error(f"DISC Error: {err}")
 
@@ -406,9 +420,9 @@ with col_right:
                 st.caption("⚡ **Executive Case Overview**: A quick, understandable synthesis of patient care and treatment.")
                 quick_p = extract_quick_understandable_paragraph(final_doctor_summary, final_patient_summary)
                 st.markdown(
-                    f'<div class="summary-card-light" style="background: #ffffff !important; border: 2px solid #10b981 !important; color: #0f172a !important;">'
-                    f'<strong style="font-size: 1.2rem; color: #047857 !important; display: block; margin-bottom: 12px;">📋 Quick Executive Case Overview:</strong>'
-                    f'<p style="color: #0f172a !important; font-size: 1.05rem; line-height: 1.8; font-weight: 500;">{quick_p}</p>'
+                    f'<div style="border-left: 4px solid #10b981; padding-left: 12px; margin-bottom: 12px;">'
+                    f'<strong style="font-size: 1.15rem; color: #047857;">📋 Quick Executive Case Overview:</strong><br><br>'
+                    f'{quick_p}'
                     f'</div>',
                     unsafe_allow_html=True
                 )
@@ -416,19 +430,14 @@ with col_right:
             with t2:
                 st.caption("Detailed technical discharge summary formatted with interactive citation tooltips.")
                 html_sum, cited_list = format_summary_citations_html(final_doctor_summary, st.session_state.retrieved_chunks)
-                st.markdown(
-                    f'<div class="summary-card-light">'
-                    f'{html_sum.replace(chr(10), "<br>")}'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
+                st.markdown(html_sum, unsafe_allow_html=True)
                 if cited_list:
                     st.markdown("#### 🔍 Evidence Sources Cited")
                     for ref in cited_list:
                         st.markdown(
-                            f'<div style="background: rgba(30, 41, 59, 0.7); border-left: 4px solid #38bdf8; padding: 12px; margin-bottom: 8px; border-radius: 0 8px 8px 0; font-size: 0.92rem; color: #f8fafc;">'
-                            f'<strong style="color: #38bdf8;">[#{ref["index"]}] Page {ref["page"]} | Section: {ref["section"]}</strong><br>'
-                            f'<span style="color: #cbd5e1; font-style: italic;">"{ref["text"]}"</span>'
+                            f'<div style="background: #f8fafc; border-left: 4px solid #0284c7; padding: 12px; margin-bottom: 8px; border-radius: 0 8px 8px 0; font-size: 0.92rem; color: #0f172a;">'
+                            f'<strong style="color: #0284c7;">[#{ref["index"]}] Page {ref["page"]} | Section: {ref["section"]}</strong><br>'
+                            f'<span style="color: #334155; font-style: italic;">"{ref["text"]}"</span>'
                             f'</div>',
                             unsafe_allow_html=True
                         )
@@ -436,26 +445,30 @@ with col_right:
             with t3:
                 st.caption("Simplified Grade-6 language designed for patient home care.")
                 html_pat, _ = format_summary_citations_html(final_patient_summary, st.session_state.retrieved_chunks)
-                st.markdown(
-                    f'<div class="summary-card-light" style="border: 2px solid #0284c7 !important;">'
-                    f'{html_pat.replace(chr(10), "<br>")}'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
+                st.markdown(html_pat, unsafe_allow_html=True)
                 
             with t4:
-                st.caption("Extracted clinical facts, medications schedule, and radiological observations.")
+                st.caption("Extracted clinical facts, medications schedule, and radiological observations from uploaded files.")
                 st.markdown("#### 💊 Prescribed Medications Table")
-                st.markdown("""
-                | Medicine | Strength | Frequency / Timing | Food Instructions | Duration / Status |
-                | :--- | :--- | :--- | :--- | :--- |
-                | **Amoxicillin** | 500 mg | Every 8 hours | After meals | 7 days |
-                | **Paracetamol** | 650 mg | As needed for fever/pain | After food | 3-5 days |
-                | **Pantoprazole** | 40 mg | Once daily (Morning) | Before breakfast | 14 days |
-                """)
                 
+                cache = IN_PROCESS_SESSION_CACHE.get(st.session_state.session_id, {})
+                evidence = cache.get("evidence")
+                if evidence and evidence.medications:
+                    med_rows = []
+                    for m in evidence.medications:
+                        stat = "⚠️ Requires Verification" if m.is_uncertain else m.duration or "As advised"
+                        med_rows.append(f"| **{m.name}** | {m.strength or 'Standard'} | {m.frequency or 'As directed'} | {m.food_instruction or 'With water'} | {stat} |")
+                    table_md = "| Medicine | Strength | Frequency / Timing | Food Instructions | Duration / Status |\n| :--- | :--- | :--- | :--- | :--- |\n" + "\n".join(med_rows)
+                    st.markdown(table_md)
+                else:
+                    st.info("No specific medications prescribed or documented in this uploaded record.")
+                    
                 st.markdown("#### 🩻 Radiological & Visual Observations")
-                st.info("ℹ️ **AI Observation**: Bilateral lung fields clear, cardiac silhouette within normal limits. No gross acute osseous abnormality identified. *Note: AI-assisted visual screening only; requires certified radiological sign-off.*")
+                if evidence and evidence.image_findings:
+                    for f in evidence.image_findings:
+                        st.info(f"ℹ️ **[{f.modality} - {f.anatomical_region}]**: {f.observation} *(Confidence: {f.confidence})*\n\n*Safety Notice: {f.limitations}*")
+                else:
+                    st.info("No imaging scans attached in this upload session.")
                 
             with t5:
                 st.markdown("**Doctor Summary Raw Markdown:**")

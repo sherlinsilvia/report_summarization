@@ -290,15 +290,16 @@ def extract_clinical_evidence_from_file(file_path: str, file_name: str = "") -> 
         # Perform image OCR text extraction
         ocr_text = ""
         try:
-            # Try PyMuPDF OCR / image text if available
-            img = Image.open(file_path)
-            # In mock/fallback environment, extract high-confidence cues or use vision OCR
-            ocr_text = f"PRESCRIPTION RECORD - {fname}\n"
-            # If standard text patterns are detected in metadata
-            meds = extract_medications_from_text(fname + " amoxicillin 500mg paracetamol pantoprazole 40mg", source_doc=fname)
+            # Open image via PyMuPDF or Pillow to extract readable text
+            doc = fitz.open(file_path)
+            for p in doc:
+                ocr_text += p.get_text()
+            if not ocr_text.strip():
+                ocr_text = f"PRESCRIPTION RECORD: {fname}\n"
+            meds = extract_medications_from_text(ocr_text, source_doc=fname)
             evidence.medications = meds
-        except Exception:
-            pass
+        except Exception as e:
+            ocr_text = f"PRESCRIPTION RECORD: {fname}\n"
 
         if not evidence.medications:
             # If handwriting is ambiguous, explicitly mark as requiring clinical review

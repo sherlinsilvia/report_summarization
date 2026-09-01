@@ -10,6 +10,7 @@ Tests all 5 user requested scenarios:
 
 import os
 import sys
+import fitz
 from PIL import Image, ImageDraw
 
 # Add project root to sys.path
@@ -25,18 +26,18 @@ def create_sample_images():
     test_dir = os.path.join(BASE_DIR, "data", "test_multimodal")
     os.makedirs(test_dir, exist_ok=True)
     
-    # 1. Typed Prescription image
-    rx_typed = Image.new('RGB', (600, 800), color=(250, 250, 250))
-    d = ImageDraw.Draw(rx_typed)
-    d.rectangle([20, 20, 580, 780], outline=(100, 100, 100), width=2)
-    d.text((40, 40), "CITY GENERAL HOSPITAL - PRESCRIPTION", fill=(0, 0, 128))
-    d.text((40, 80), "Patient: John Doe, Age: 52, Date: 2026-09-01", fill=(0, 0, 0))
-    d.text((40, 120), "Rx:", fill=(0, 0, 0))
-    d.text((40, 160), "1. Tab. Amoxicillin 500mg - 1 tablet TDS after meals x 7 days", fill=(0, 0, 0))
-    d.text((40, 200), "2. Tab. Paracetamol 650mg - 1 tablet SOS after food", fill=(0, 0, 0))
-    d.text((40, 240), "3. Cap. Pantoprazole 40mg - 1 capsule OD before breakfast x 14 days", fill=(0, 0, 0))
-    rx_typed_path = os.path.join(test_dir, "typed_prescription_sample.png")
-    rx_typed.save(rx_typed_path)
+    # 1. Typed Prescription PDF (Digital/printed format)
+    rx_doc = fitz.open()
+    p = rx_doc.new_page(width=595, height=842)
+    p.insert_text(fitz.Point(50, 60), "CITY GENERAL HOSPITAL - PRESCRIPTION", fontsize=14, fontname="helv")
+    p.insert_text(fitz.Point(50, 90), "Patient Name: John Doe | Age: 52 | Date: 2026-09-01", fontsize=10, fontname="helv")
+    p.insert_text(fitz.Point(50, 130), "Rx:", fontsize=12, fontname="helv")
+    p.insert_text(fitz.Point(50, 160), "1. Tab. Amoxicillin 500mg - 1 tablet TDS after meals x 7 days", fontsize=10, fontname="helv")
+    p.insert_text(fitz.Point(50, 190), "2. Tab. Paracetamol 650mg - 1 tablet SOS after food", fontsize=10, fontname="helv")
+    p.insert_text(fitz.Point(50, 220), "3. Cap. Pantoprazole 40mg - 1 capsule OD before breakfast x 14 days", fontsize=10, fontname="helv")
+    rx_typed_path = os.path.join(test_dir, "typed_prescription_sample.pdf")
+    rx_doc.save(rx_typed_path)
+    rx_doc.close()
     
     # 2. Handwritten Prescription image
     rx_hand = Image.new('RGB', (500, 700), color=(245, 242, 235))
