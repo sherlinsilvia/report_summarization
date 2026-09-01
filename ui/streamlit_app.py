@@ -63,24 +63,24 @@ st.markdown("""
         margin-bottom: 20px;
     }
     .glass-card {
-        background: rgba(30, 41, 59, 0.6);
+        background: rgba(30, 41, 59, 0.7);
         backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 14px;
         padding: 18px;
         margin-bottom: 16px;
     }
     .badge-detected {
-        background: rgba(14, 165, 233, 0.15);
-        border: 1px solid rgba(56, 189, 248, 0.4);
+        background: rgba(14, 165, 233, 0.18);
+        border: 1px solid rgba(56, 189, 248, 0.5);
         border-radius: 8px;
         padding: 10px 14px;
         margin-bottom: 10px;
-        color: #e0f2fe;
-        font-size: 0.92rem;
+        color: #f0f9ff;
+        font-size: 0.94rem;
     }
     .metric-value {
-        font-size: 1.8rem;
+        font-size: 1.85rem;
         font-weight: 800;
         font-family: 'Outfit', sans-serif;
     }
@@ -106,29 +106,58 @@ st.markdown("""
     }
     .step-active {
         border-left-color: #38bdf8;
-        background: rgba(56, 189, 248, 0.1);
+        background: rgba(56, 189, 248, 0.15);
         color: #38bdf8;
         font-weight: 600;
     }
     .step-completed {
         border-left-color: #10b981;
-        background: rgba(16, 185, 129, 0.1);
+        background: rgba(16, 185, 129, 0.15);
         color: #10b981;
+    }
+    .summary-card-light {
+        background: #ffffff !important;
+        border: 1.5px solid #cbd5e1;
+        padding: 26px;
+        border-radius: 14px;
+        line-height: 1.8;
+        color: #0f172a !important;
+        font-size: 1.02rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .summary-card-light h4 {
+        color: #0369a1 !important;
+        font-weight: 700 !important;
+    }
+    .summary-card-light strong {
+        color: #0284c7 !important;
+    }
+    .summary-card-light div {
+        color: #1e293b !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # Helper function for quick executive summary paragraph
 def extract_quick_understandable_paragraph(doctor_summary: str, patient_summary: str) -> str:
-    cleaned = clean_markdown_and_format_html(doctor_summary or "")
-    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', cleaned) if len(s.strip()) > 15]
-    if len(sentences) >= 3:
+    cleaned = clean_markdown_and_format_html(doctor_summary or "", is_dark_bg=False)
+    # Filter out repetitive disclaimers or citation brackets from executive paragraph
+    clean_text_only = re.sub(r'<[^>]+>', ' ', cleaned)
+    clean_text_only = re.sub(r'\[\d+\]', '', clean_text_only)
+    clean_text_only = re.sub(r'Clinical Disclaimers & Uncertainties:.*', '', clean_text_only)
+    
+    sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_text_only) if len(s.strip()) > 20 and not s.strip().startswith("• Clinical Disclaimers")]
+    if len(sentences) >= 2:
         return " ".join(sentences[:4])
-    clean_p = clean_markdown_and_format_html(patient_summary or "")
-    p_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_p) if len(s.strip()) > 15]
+        
+    clean_p = clean_markdown_and_format_html(patient_summary or "", is_dark_bg=False)
+    clean_p_text = re.sub(r'<[^>]+>', ' ', clean_p)
+    clean_p_text = re.sub(r'\[\d+\]', '', clean_p_text)
+    p_sentences = [s.strip() for s in re.split(r'(?<=[.!?])\s+', clean_p_text) if len(s.strip()) > 20]
     if p_sentences:
         return " ".join(p_sentences[:4])
-    return "Clinical review and diagnostic evaluation completed. All prescribed discharge medications and supportive care instructions are documented in detail below."
+        
+    return "Clinical review and diagnostic evaluation completed. All prescribed discharge medications, imaging observations, and supportive care instructions are documented in detail below."
 
 # Sidebar
 with st.sidebar:
@@ -208,7 +237,7 @@ with col_left:
                 f'<div class="badge-detected">'
                 f'<strong>{icon} {info["file_name"]}</strong><br>'
                 f'<span style="color: #38bdf8; font-weight: 600;">Detected Input: {info["label"]}</span> '
-                f'<span style="color: #94a3b8;">({info["confidence"]*100:.0f}% confidence)</span>'
+                f'<span style="color: #cbd5e1;">({info["confidence"]*100:.0f}% confidence)</span>'
                 f'</div>',
                 unsafe_allow_html=True
             )
@@ -328,17 +357,17 @@ with col_right:
                     f'<div class="glass-card" style="text-align: center;">'
                     f'<div class="metric-title">Draft Summary Trust</div>'
                     f'<div class="metric-value" style="color: {"#10b981" if initial_score >= trust_threshold else "#ef4444"};">{initial_score*100:.0f}%</div>'
-                    f'<div>{"✅ Passed Threshold" if initial_score >= trust_threshold else "⚠️ Needs Correction"}</div>'
+                    f'<div style="color: #e2e8f0;">{"✅ Passed Threshold" if initial_score >= trust_threshold else "⚠️ Needs Correction"}</div>'
                     f'</div>',
                     unsafe_allow_html=True
                 )
             with m_col2:
                 if has_disc:
                     st.markdown(
-                        f'<div class="glass-card" style="text-align: center; border-color: #10b981;">'
+                        f'<div class="glass-card" style="text-align: center; border-color: #10b981; border-width: 2px;">'
                         f'<div class="metric-title">Final Verified Trust</div>'
                         f'<div class="metric-value" style="color: {"#10b981" if final_score >= trust_threshold else "#ef4444"};">{final_score*100:.0f}%</div>'
-                        f'<div>{"✅ Verified Trustworthy" if final_score >= trust_threshold else "⚠️ Low Confidence"}</div>'
+                        f'<div style="color: #e2e8f0;">{"✅ Verified Trustworthy" if final_score >= trust_threshold else "⚠️ Low Confidence"}</div>'
                         f'</div>',
                         unsafe_allow_html=True
                     )
@@ -347,7 +376,7 @@ with col_right:
                         f'<div class="glass-card" style="text-align: center; border-style: dashed;">'
                         f'<div class="metric-title">Final Verified Trust</div>'
                         f'<div class="metric-value" style="color: #94a3b8;">--</div>'
-                        f'<div>Click "Run DISC Verification" to audit</div>'
+                        f'<div style="color: #94a3b8;">Click "Run DISC Verification" to audit</div>'
                         f'</div>',
                         unsafe_allow_html=True
                     )
@@ -377,18 +406,18 @@ with col_right:
                 st.caption("⚡ **Executive Case Overview**: A quick, understandable synthesis of patient care and treatment.")
                 quick_p = extract_quick_understandable_paragraph(final_doctor_summary, final_patient_summary)
                 st.markdown(
-                    f'<div style="background: #f0fdf4; border: 1.5px solid #10b981; padding: 22px; border-radius: 12px; line-height: 1.8; color: #064e3b; font-size: 1.05rem; font-weight: 500;">'
-                    f'<strong style="font-size: 1.15rem; color: #047857;">📋 Quick Executive Summary:</strong><br><br>'
-                    f'{quick_p}'
+                    f'<div class="summary-card-light" style="background: #ffffff !important; border: 2px solid #10b981 !important; color: #0f172a !important;">'
+                    f'<strong style="font-size: 1.2rem; color: #047857 !important; display: block; margin-bottom: 12px;">📋 Quick Executive Case Overview:</strong>'
+                    f'<p style="color: #0f172a !important; font-size: 1.05rem; line-height: 1.8; font-weight: 500;">{quick_p}</p>'
                     f'</div>',
                     unsafe_allow_html=True
                 )
                 
             with t2:
                 st.caption("Detailed technical discharge summary formatted with interactive citation tooltips.")
-                html_sum, cited_list = format_summary_citations_html(final_doctor_summary, st.session_state.retrieved_chunks)
+                html_sum, cited_list = format_summary_citations_html(final_doctor_summary, st.session_state.retrieved_chunks, is_dark_bg=False)
                 st.markdown(
-                    f'<div style="background: white; border: 1px solid #cbd5e1; padding: 25px; border-radius: 12px; line-height: 1.7; color: #1e293b; font-size: 1.02rem;">'
+                    f'<div class="summary-card-light">'
                     f'{html_sum.replace(chr(10), "<br>")}'
                     f'</div>',
                     unsafe_allow_html=True
@@ -397,18 +426,18 @@ with col_right:
                     st.markdown("#### 🔍 Evidence Sources Cited")
                     for ref in cited_list:
                         st.markdown(
-                            f'<div style="background: #f8fafc; border-left: 4px solid #3b82f6; padding: 10px; margin-bottom: 8px; border-radius: 0 8px 8px 0; font-size: 0.9rem;">'
-                            f'<strong>[#{ref["index"]}] Page {ref["page"]} | Section: {ref["section"]}</strong><br>'
-                            f'<span style="color: #64748b; font-style: italic;">"{ref["text"]}"</span>'
+                            f'<div style="background: rgba(30, 41, 59, 0.7); border-left: 4px solid #38bdf8; padding: 12px; margin-bottom: 8px; border-radius: 0 8px 8px 0; font-size: 0.92rem; color: #f8fafc;">'
+                            f'<strong style="color: #38bdf8;">[#{ref["index"]}] Page {ref["page"]} | Section: {ref["section"]}</strong><br>'
+                            f'<span style="color: #cbd5e1; font-style: italic;">"{ref["text"]}"</span>'
                             f'</div>',
                             unsafe_allow_html=True
                         )
                         
             with t3:
                 st.caption("Simplified Grade-6 language designed for patient home care.")
-                html_pat, _ = format_summary_citations_html(final_patient_summary, st.session_state.retrieved_chunks)
+                html_pat, _ = format_summary_citations_html(final_patient_summary, st.session_state.retrieved_chunks, is_dark_bg=False)
                 st.markdown(
-                    f'<div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 25px; border-radius: 12px; line-height: 1.7; color: #0f172a; font-size: 1.02rem;">'
+                    f'<div class="summary-card-light" style="border: 2px solid #0284c7 !important;">'
                     f'{html_pat.replace(chr(10), "<br>")}'
                     f'</div>',
                     unsafe_allow_html=True
