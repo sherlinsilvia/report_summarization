@@ -1,7 +1,6 @@
 [server]
 headless = true
 address = "0.0.0.0"
-port = 8501
 enableCORS = false
 enableXsrfProtection = false
 enableWebsocketCompression = false
@@ -9,8 +8,6 @@ maxUploadSize = 200
 
 [browser]
 gatherUsageStats = false
-serverAddress = "0.0.0.0"
-serverPort = 8501
 
 [theme]
 base = "dark"
