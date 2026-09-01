@@ -80,14 +80,30 @@ def load_mimic_csv(file_path: str, subject_id: int = None, hadm_id: int = None) 
         print(f"Error loading MIMIC CSV: {e}")
         return []
 
+def load_image(file_path: str) -> list[dict]:
+    """
+    Loads an image file (e.g. X-ray, prescription, CT scan, MRI)
+    and extracts text/findings via the multimodal evidence extractor.
+    """
+    try:
+        from multimodal.extractor import extract_clinical_evidence_from_file
+        evidence = extract_clinical_evidence_from_file(file_path)
+        return [{"page": 1, "text": evidence.raw_extracted_text or "Medical Image Record"}]
+    except Exception as e:
+        print(f"Error loading medical image {file_path}: {e}")
+        return [{"page": 1, "text": f"Medical image document {os.path.basename(file_path)}"}]
+
 def load_report(file_path: str) -> list[dict]:
     """
     Orchestrates report loading based on file extension.
+    Supports PDF, CSV, Images (JPG, PNG, WEBP), and Plain Text.
     """
     ext = os.path.splitext(file_path)[1].lower()
     if ext == ".pdf":
         return load_pdf(file_path)
     elif ext == ".csv":
         return load_mimic_csv(file_path)
+    elif ext in [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"]:
+        return load_image(file_path)
     else:
         return load_text(file_path)
