@@ -23,7 +23,7 @@ from summarization.summarizer import generate_draft_summary
 from trust.trust_score import compute_composite_trust_score
 from disc.controller import run_disc_pipeline
 
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = (os.getenv("FASTAPI_URL") or os.getenv("API_URL") or "http://localhost:8000").rstrip("/")
 
 # In-memory session cache for in-process mode
 IN_PROCESS_SESSION_CACHE = {}

@@ -23,7 +23,7 @@ except ImportError:
     )
 
 # API Endpoint
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = (os.getenv("FASTAPI_URL") or os.getenv("API_URL") or "http://localhost:8000").rstrip("/")
 
 # Page Configuration
 st.set_page_config(
