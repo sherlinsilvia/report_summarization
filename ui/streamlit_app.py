@@ -2,6 +2,7 @@ import streamlit as st
 import requests
 import json
 import os
+import re
 from citation.formatter import format_summary_citations_html, clean_markdown_and_format_html
 
 # API Endpoint
