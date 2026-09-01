@@ -1,7 +1,7 @@
 """
 TrustMed Backend Bridge
 Seamlessly connects Streamlit UI to FastAPI backend when available,
-or executes pipeline in-process when deployed on Streamlit Cloud / standalone environments.
+or executes pipeline directly in-process when deployed on Streamlit Cloud / standalone environments.
 """
 
 import os
@@ -28,28 +28,36 @@ API_URL = os.getenv("API_URL", "http://localhost:8000")
 # In-memory session cache for in-process mode
 IN_PROCESS_SESSION_CACHE = {}
 
+def is_fastapi_available() -> bool:
+    """
+    Checks if a live FastAPI server is accessible.
+    """
+    try:
+        r = requests.get(f"{API_URL}/health", timeout=0.8)
+        return r.status_code == 200
+    except Exception:
+        return False
+
 def upload_and_index_report(file_name: str, file_bytes: bytes, mime_type: str) -> Tuple[bool, Dict[str, Any], Optional[str]]:
     """
-    Tries FastAPI /upload_report endpoint. If connection fails (e.g. deployed on Streamlit Cloud),
-    runs extraction, domain validation, chunking, and FAISS/BM25 indexing in-process.
+    Uploads and indexes a clinical report. If FastAPI server is not active (e.g. Streamlit Cloud),
+    processes and indexes directly in-process.
     """
-    # 1. Try Remote / Local FastAPI Server
-    try:
-        files = {"file": (file_name, file_bytes, mime_type)}
-        res = requests.post(f"{API_URL}/upload_report", files=files, timeout=10)
-        if res.status_code == 200:
-            return True, res.json(), None
-        else:
-            try:
-                err = res.json().get("detail", res.text)
-            except Exception:
-                err = res.text
-            return False, {}, err
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        # Fallback to direct in-process pipeline
-        pass
-    except Exception as e:
-        pass
+    # 1. Try Remote / Local FastAPI Server if available
+    if is_fastapi_available():
+        try:
+            files = {"file": (file_name, file_bytes, mime_type)}
+            res = requests.post(f"{API_URL}/upload_report", files=files, timeout=15)
+            if res.status_code == 200:
+                return True, res.json(), None
+            else:
+                try:
+                    err = res.json().get("detail", res.text)
+                except Exception:
+                    err = res.text
+                return False, {}, err
+        except Exception:
+            pass
 
     # 2. In-Process Standalone Execution (Streamlit Cloud Deployment)
     session_id = str(uuid.uuid4())
@@ -120,13 +128,14 @@ def parse_mimic_csv(file_name: str, file_bytes: bytes, mime_type: str) -> Tuple[
     """
     Parses MIMIC-IV CSV metadata via FastAPI or in-process.
     """
-    try:
-        files = {"file": (file_name, file_bytes, mime_type)}
-        res = requests.post(f"{API_URL}/parse_mimic_metadata", files=files, timeout=10)
-        if res.status_code == 200:
-            return True, res.json(), None
-    except Exception:
-        pass
+    if is_fastapi_available():
+        try:
+            files = {"file": (file_name, file_bytes, mime_type)}
+            res = requests.post(f"{API_URL}/parse_mimic_metadata", files=files, timeout=10)
+            if res.status_code == 200:
+                return True, res.json(), None
+        except Exception:
+            pass
 
     # In-process MIMIC parse
     try:
@@ -155,16 +164,17 @@ def process_mimic_selection(session_id: str, subject_id: int, hadm_id: int) -> T
     """
     Processes selected MIMIC patient via FastAPI or in-process.
     """
-    try:
-        res = requests.post(
-            f"{API_URL}/process_mimic_report",
-            json={"session_id": session_id, "subject_id": subject_id, "hadm_id": hadm_id},
-            timeout=15
-        )
-        if res.status_code == 200:
-            return True, res.json(), None
-    except Exception:
-        pass
+    if is_fastapi_available():
+        try:
+            res = requests.post(
+                f"{API_URL}/process_mimic_report",
+                json={"session_id": session_id, "subject_id": subject_id, "hadm_id": hadm_id},
+                timeout=15
+            )
+            if res.status_code == 200:
+                return True, res.json(), None
+        except Exception:
+            pass
 
     # In-process MIMIC processing
     temp_file_path = None
@@ -224,16 +234,17 @@ def generate_summary_bridge(session_id: str) -> Tuple[bool, Dict[str, Any], Opti
     """
     Generates draft summary via FastAPI or in-process.
     """
-    try:
-        res = requests.post(
-            f"{API_URL}/generate_summary",
-            json={"session_id": session_id},
-            timeout=30
-        )
-        if res.status_code == 200:
-            return True, res.json(), None
-    except Exception:
-        pass
+    if is_fastapi_available():
+        try:
+            res = requests.post(
+                f"{API_URL}/generate_summary",
+                json={"session_id": session_id},
+                timeout=30
+            )
+            if res.status_code == 200:
+                return True, res.json(), None
+        except Exception:
+            pass
 
     # In-process summary generation
     try:
@@ -287,16 +298,17 @@ def run_disc_bridge(session_id: str, draft_summary: str) -> Tuple[bool, Dict[str
     """
     Runs DISC dynamic self-correction audit loop via FastAPI or in-process.
     """
-    try:
-        res = requests.post(
-            f"{API_URL}/run_disc",
-            json={"session_id": session_id, "draft_summary": draft_summary},
-            timeout=60
-        )
-        if res.status_code == 200:
-            return True, res.json(), None
-    except Exception:
-        pass
+    if is_fastapi_available():
+        try:
+            res = requests.post(
+                f"{API_URL}/run_disc",
+                json={"session_id": session_id, "draft_summary": draft_summary},
+                timeout=60
+            )
+            if res.status_code == 200:
+                return True, res.json(), None
+        except Exception:
+            pass
 
     # In-process DISC execution
     try:
