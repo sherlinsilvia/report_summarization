@@ -80,23 +80,38 @@ def load_mimic_csv(file_path: str, subject_id: int = None, hadm_id: int = None) 
         print(f"Error loading MIMIC CSV: {e}")
         return []
 
-def load_image(file_path: str) -> list[dict]:
+def load_image_document(file_path: str) -> list[dict]:
     """
-    Loads an image file (e.g. X-ray, prescription, CT scan, MRI)
-    and extracts text/findings via the multimodal evidence extractor.
+    Loads an image document or prescription photo and returns structured clinical page text.
     """
     try:
-        from multimodal.extractor import extract_clinical_evidence_from_file
-        evidence = extract_clinical_evidence_from_file(file_path)
-        return [{"page": 1, "text": evidence.raw_extracted_text or "Medical Image Record"}]
+        with open(file_path, "rb") as f:
+            b = f.read()
+        from prescription.analyzer import analyze_prescription_content
+        res = analyze_prescription_content(b, os.path.basename(file_path))
+        full_text = (
+            f"HOSPITAL: {res['hospital_name']}\n"
+            f"PHYSICIANS: {res['doctor_info']}\n"
+            f"PATIENT: {res['patient_name']} (Age: {res['age']}, Gender: {res['gender']}, Card: {res['card_no']}, Department: {res['department']})\n"
+            f"DIAGNOSIS: {res['diagnosis']}\n\n"
+            f"PRESCRIBED MEDICATIONS:\n" +
+            "\n".join([f"- {m['name']} ({m['type']}): {m['frequency']}, {m['timing']}, Duration: {m['duration']}. Purpose: {m['purpose']}" for m in res['medications']]) +
+            "\n\nSAFETY PRECAUTIONS & ADVICE:\n" +
+            "\n".join([f"- {w}" for w in res['safety_warnings']]) +
+            f"\n\nEXECUTIVE SUMMARY: {res['executive_summary']}"
+        )
+        return [{
+            "page": 1,
+            "text": full_text
+        }]
     except Exception as e:
-        print(f"Error loading medical image {file_path}: {e}")
-        return [{"page": 1, "text": f"Medical image document {os.path.basename(file_path)}"}]
+        print(f"Error loading image document {file_path}: {e}")
+        return load_text(file_path)
 
 def load_report(file_path: str) -> list[dict]:
     """
     Orchestrates report loading based on file extension.
-    Supports PDF, CSV, Images (JPG, PNG, WEBP), and Plain Text.
+    Supports PDF, CSV, TXT, and all medical image formats (JPG, JPEG, PNG, WEBP, BMP).
     """
     ext = os.path.splitext(file_path)[1].lower()
     if ext == ".pdf":
@@ -104,6 +119,6 @@ def load_report(file_path: str) -> list[dict]:
     elif ext == ".csv":
         return load_mimic_csv(file_path)
     elif ext in [".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tiff"]:
-        return load_image(file_path)
+        return load_image_document(file_path)
     else:
         return load_text(file_path)

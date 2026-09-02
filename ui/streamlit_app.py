@@ -385,177 +385,24 @@ if "prescription_image_bytes" not in st.session_state:
 if "prescription_filename" not in st.session_state:
     st.session_state.prescription_filename = None
 
-# Workflow Selection
-st.markdown("---")
-app_mode = st.radio(
-    "🛠️ **Select Clinical AI Workflow:**",
-    ["📑 Clinical Report Summarizer (RAG + DISC)", "💊 Doctor's Prescription Scanner (Handwritten Rx)"],
-    horizontal=True
-)
+# Layout Columns
+col_left, col_right = st.columns([1, 2], gap="large")
 
-if app_mode == "💊 Doctor's Prescription Scanner (Handwritten Rx)":
-    st.markdown("---")
-    rx_col1, rx_col2 = st.columns([1, 1.8], gap="large")
+with col_left:
+    st.markdown("### 📄 Upload Clinical Report / Prescription")
+    uploaded_file = st.file_uploader(
+        "Upload Medical Record or Prescription (PDF, TXT, CSV, JPG, JPEG, PNG, WEBP)",
+        type=["pdf", "txt", "csv", "jpg", "jpeg", "png", "webp", "bmp"],
+        help="Upload any discharge summary, MIMIC CSV notes, or doctor's prescription image/PDF."
+    )
     
-    with rx_col1:
-        st.markdown("### 📷 Upload Doctor's Prescription")
-        st.caption("Upload a photo, scan, or PDF of a doctor's handwritten prescription or outpatient card.")
-        
-        # Sample Prescription Loader
-        sample_rx_path = os.path.join(config.REPORTS_DIR, "sample_prescription_chest_diseases.jpg")
-        if os.path.exists(sample_rx_path):
-            if st.button("✨ Load Sample Outpatient Card (Chest Diseases Hospital, Jammu)", use_container_width=True):
-                with open(sample_rx_path, "rb") as f:
-                    st.session_state.prescription_image_bytes = f.read()
-                st.session_state.prescription_filename = "sample_prescription_chest_diseases.jpg"
-                st.session_state.prescription_data = None
-                st.rerun()
-
-        rx_file = st.file_uploader(
-            "Upload Prescription Image (JPG, PNG, WEBP) or PDF",
-            type=["jpg", "jpeg", "png", "webp", "pdf"],
-            key="rx_uploader"
-        )
-        
-        if rx_file is not None:
-            st.session_state.prescription_image_bytes = rx_file.getvalue()
-            st.session_state.prescription_filename = rx_file.name
-
-        if st.session_state.prescription_image_bytes:
-            st.markdown("#### 🖼️ Prescription Preview")
-            st.image(st.session_state.prescription_image_bytes, use_container_width=True)
-            
-            if st.button("🔍 Analyze & Decode Prescription", use_container_width=True, type="primary"):
-                with st.spinner("Decoding doctor's handwriting, extracting medications, and generating patient guide..."):
-                    success, rx_data, err = analyze_prescription_bridge(
-                        st.session_state.prescription_filename or "prescription.jpg",
-                        st.session_state.prescription_image_bytes
-                    )
-                    if success:
-                        st.session_state.prescription_data = rx_data
-                        st.success("Prescription decoded and analyzed successfully!")
-                    else:
-                        st.error(f"Error analyzing prescription: {err}")
-                        
-        if st.session_state.prescription_data:
-            if st.button("🗑️ Clear Prescription", use_container_width=True):
-                st.session_state.prescription_data = None
-                st.session_state.prescription_image_bytes = None
-                st.session_state.prescription_filename = None
-                st.rerun()
-
-    with rx_col2:
-        if st.session_state.prescription_data:
-            data = st.session_state.prescription_data
-            
-            # 1. Hospital & Patient Clinical Header Banner
-            st.markdown(
-                f'<div style="background: rgba(30, 41, 59, 0.85); border: 1.5px solid #38bdf8; border-radius: 14px; padding: 20px; margin-bottom: 1.25rem; box-shadow: 0 8px 25px rgba(0,0,0,0.3);">'
-                f'<div style="font-size: 1.25rem; font-weight: 800; color: #38bdf8; font-family: \'Outfit\', sans-serif;">🏥 {data["hospital_name"]}</div>'
-                f'<div style="font-size: 0.88rem; color: #cbd5e1; margin-top: 4px;">👨‍⚕️ <strong>Physicians:</strong> {data["doctor_info"]}</div>'
-                f'<div style="margin-top: 12px; display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.9rem; color: #f8fafc; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">'
-                f'<div>👤 <strong>Patient:</strong> {data["patient_name"]} ({data["age"]} yrs, {data["gender"]})</div>'
-                f'<div>📋 <strong>Card No:</strong> {data["card_no"]}</div>'
-                f'<div>🩺 <strong>Dept:</strong> {data["department"]}</div>'
-                f'</div>'
-                f'</div>',
-                unsafe_allow_html=True
-            )
-            
-            # 2. Prescription Analysis Tabs
-            p_tab1, p_tab2, p_tab3, p_tab4 = st.tabs([
-                "📋 Executive Overview",
-                "💊 Medication Schedule & Timeline",
-                "👤 Patient Explanation",
-                "⚠️ Safety Warnings & Advice"
-            ])
-            
-            with p_tab1:
-                st.caption("⚡ **Clinical Summary**: Executive breakdown of the diagnosis and therapeutic plan.")
-                st.markdown(
-                    f'<div style="background: #f0fdf4; border: 1.5px solid #10b981; padding: 22px; border-radius: 12px; line-height: 1.8; color: #064e3b; font-size: 1.05rem; font-weight: 500; box-shadow: 0 4px 14px rgba(16,185,129,0.12);">'
-                    f'{data["executive_summary"]}'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-                
-            with p_tab2:
-                st.caption("🕒 **Decoded Daily Pill Schedule**: Exact dosages, food instructions, and duration.")
-                for med in data["medications"]:
-                    st.markdown(
-                        f'<div style="background: rgba(30, 41, 59, 0.75); border: 1px solid rgba(255,255,255,0.1); border-left: 5px solid #38bdf8; border-radius: 10px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">'
-                        f'<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">'
-                        f'<div style="font-size: 1.15rem; font-weight: 800; color: #f8fafc;">💊 {med["name"]}</div>'
-                        f'<div style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; padding: 3px 10px; border-radius: 9999px; font-size: 0.8rem; font-weight: 700;">{med["type"]}</div>'
-                        f'</div>'
-                        f'<div style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px;">'
-                        f'<span style="background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">🕒 {med["frequency"]}</span>'
-                        f'<span style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">🍽️ {med["timing"]}</span>'
-                        f'<span style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; padding: 2px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700;">📅 {med["duration"]}</span>'
-                        f'</div>'
-                        f'<div style="font-size: 0.88rem; color: #94a3b8; margin-top: 8px;">💡 <strong>Purpose:</strong> {med["purpose"]}</div>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                    
-            with p_tab3:
-                st.caption("🗣️ **Plain Language Guide**: Easy-to-understand explanation for patient and family.")
-                st.markdown(
-                    f'<div style="background: #f8fafc; border: 1px solid #cbd5e1; padding: 22px; border-radius: 12px; line-height: 1.8; color: #0f172a; font-size: 1.02rem;">'
-                    f'{data["patient_plain_explanation"].replace(chr(10), "<br>")}'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-                
-            with p_tab4:
-                st.caption("🛡️ **Safety Alerts & Precautions**: Critical instructions for safe recovery.")
-                for w in data["safety_warnings"]:
-                    st.markdown(
-                        f'<div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 8px; color: #fca5a5; font-size: 0.95rem;">'
-                        f'{w}'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-        else:
-            st.info("👈 Upload a prescription photo/PDF on the left or click **'Load Sample Outpatient Card'**, then click **'Analyze & Decode Prescription'** to view the medication timeline and clinical breakdown!")
-            
-            # Features card
-            st.markdown("### 💡 What Prescription Scanner Does")
-            p_f1, p_f2 = st.columns(2)
-            with p_f1:
-                st.markdown(
-                    f'<div class="feature-card">'
-                    f'<div style="font-size: 2rem; margin-bottom: 8px;">📝</div>'
-                    f'<strong style="font-size: 1.05rem; color: #38bdf8;">Handwriting & OCR Extraction</strong>'
-                    f'<p style="font-size: 0.85rem; color: #94a3b8; margin-top: 6px; line-height: 1.5;">Extracts clinic headers, doctor names, patient cards, and handwritten drug notations with high fidelity.</p>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-            with p_f2:
-                st.markdown(
-                    f'<div class="feature-card">'
-                    f'<div style="font-size: 2rem; margin-bottom: 8px;">💊</div>'
-                    f'<strong style="font-size: 1.05rem; color: #34d399;">Dosage & Safety Translation</strong>'
-                    f'<p style="font-size: 0.85rem; color: #94a3b8; margin-top: 6px; line-height: 1.5;">Translates medical shorthand (1-0-1, OD, BD) into plain morning/afternoon/night pill reminders with food instructions.</p>'
-                    f'</div>',
-                    unsafe_allow_html=True
-                )
-
-else:
-    # Standard Clinical Report Summarizer (RAG + DISC)
-    col_left, col_right = st.columns([1, 2], gap="large")
-    
-    with col_left:
-        st.markdown("### 📄 Upload Clinical Report")
-        uploaded_file = st.file_uploader(
-            "Upload PDF, TXT, or MIMIC-IV CSV notes database",
-            type=["pdf", "txt", "csv"],
-            help="The system will process the report and index it for hybrid search."
-        )
-    
+    # Image preview if an image/prescription is uploaded
     if uploaded_file is not None:
         file_ext = os.path.splitext(uploaded_file.name)[1].lower()
-        
+        if file_ext in [".jpg", ".jpeg", ".png", ".webp", ".bmp"]:
+            st.markdown("#### 🖼️ Document / Prescription Preview")
+            st.image(uploaded_file.getvalue(), use_container_width=True)
+
         if file_ext == ".csv":
             st.info("MIMIC-IV notes dataset detected. Parse metadata to select a patient.")
             
@@ -602,7 +449,7 @@ else:
                             st.error(f"Failed to process patient report: {err}")
                             st.session_state.pipeline_step = 0
         else:
-            # Standard PDF/TXT flow
+            # Standard PDF/TXT/Image flow
             if st.button("🚀 Process & Index Document", use_container_width=True):
                 st.session_state.pipeline_step = 1
                 with st.spinner("Parsing report sections, splitting sentences, and indexing dense/sparse representations..."):
