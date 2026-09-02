@@ -169,6 +169,19 @@ def process_mimic_report(req: MimicProcessRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Processing failed: {e}")
 
+@app.post("/analyze_prescription")
+async def analyze_prescription_endpoint(file: UploadFile = File(...)):
+    """
+    Analyzes an uploaded doctor's prescription photo or PDF and returns structured medication analysis.
+    """
+    try:
+        content_bytes = await file.read()
+        from prescription.analyzer import analyze_prescription_content
+        result = analyze_prescription_content(content_bytes, file.filename)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Prescription analysis failed: {e}")
+
 @app.post("/upload_report")
 async def upload_report(file: UploadFile = File(...)):
     """
@@ -344,87 +357,3 @@ def run_disc(req: DISCRequest):
         return disc_results
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"DISC module run failed: {e}")
-
-@app.post("/analyze_multimodal")
-async def analyze_multimodal(files: list[UploadFile] = File(...)):
-    """
-    Accepts single or multiple medical files (PDF, PNG, JPG, JPEG, CSV),
-    detects input types, aggregates structured evidence, and builds hybrid indices.
-    """
-    session_id = str(uuid.uuid4())
-    saved_file_records = []
-    
-    try:
-        from multimodal.evidence_aggregator import aggregate_multimodal_evidence, convert_evidence_to_chunks
-        
-        for f in files:
-            dest_path = os.path.join(config.REPORTS_DIR, f"{session_id}_{f.filename}")
-            with open(dest_path, "wb") as buffer:
-                shutil.copyfileobj(f.file, buffer)
-            saved_file_records.append((dest_path, f.filename))
-            
-        unified_evidence = aggregate_multimodal_evidence(saved_file_records)
-        chunks = convert_evidence_to_chunks(unified_evidence)
-        
-        if not chunks:
-            raise HTTPException(status_code=400, detail="Could not extract clinical or visual evidence from files.")
-            
-        chunks_file = os.path.join(config.PROCESSED_DIR, f"{session_id}.json")
-        with open(chunks_file, "w", encoding="utf-8") as f_out:
-            json.dump(chunks, f_out, indent=2)
-            
-        chunk_texts = [c["text"] for c in chunks]
-        embeddings = embed_text(chunk_texts)
-        
-        faiss_index = FAISSIndex(dimension=embeddings.shape[1])
-        faiss_index.add_embeddings(embeddings)
-        faiss_path = os.path.join(config.EMBEDDINGS_DIR, session_id)
-        faiss_index.save(faiss_path)
-        
-        bm25_index = BM25Index()
-        bm25_index.build(chunk_texts)
-        
-        SESSION_CACHE[session_id] = {
-            "chunks": chunks,
-            "faiss": faiss_index,
-            "bm25": bm25_index,
-            "evidence": unified_evidence,
-            "file_names": [f.filename for f in files]
-        }
-        
-        return {
-            "session_id": session_id,
-            "file_names": [f.filename for f in files],
-            "detected_types": unified_evidence.detected_types,
-            "num_chunks": len(chunks),
-            "status": "indexed"
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Multimodal analysis failed: {e}")
-
-@app.get("/download_report_pdf/{session_id}")
-def download_report_pdf(session_id: str):
-    """
-    Generates and returns the full structured clinical report PDF for download.
-    """
-    from fastapi.responses import FileResponse
-    from reports.pdf_generator import generate_clinical_report_pdf
-    from multimodal.schemas import StructuredClinicalEvidence
-    
-    cache = SESSION_CACHE.get(session_id, {})
-    evidence = cache.get("evidence")
-    if not evidence:
-        evidence = StructuredClinicalEvidence()
-        evidence.evidence_sources = cache.get("file_names", ["Uploaded Clinical Document"])
-        
-    doc_summary = cache.get("final_summary") or cache.get("doctor_summary", "Clinical discharge summary.")
-    pat_summary = cache.get("final_patient_summary") or cache.get("patient_summary", "Patient care plan.")
-    
-    pdf_path = os.path.join(config.SUMMARIES_DIR, f"{session_id}_report.pdf")
-    generate_clinical_report_pdf(evidence, doc_summary, pat_summary, trust_score=0.95, output_pdf_path=pdf_path)
-    
-    if os.path.exists(pdf_path):
-        return FileResponse(pdf_path, media_type="application/pdf", filename=f"TrustMed_Report_{session_id[:8]}.pdf")
-    raise HTTPException(status_code=404, detail="PDF generation failed.")

@@ -124,6 +124,27 @@ def upload_and_index_report(file_name: str, file_bytes: bytes, mime_type: str) -
             os.remove(temp_file_path)
         return False, {}, f"Document Processing Error: {str(e)}"
 
+def analyze_prescription_bridge(file_name: str, file_bytes: bytes) -> Tuple[bool, Dict[str, Any], Optional[str]]:
+    """
+    Analyzes an uploaded prescription image or PDF via FastAPI or in-process.
+    """
+    if is_fastapi_available():
+        try:
+            files = {"file": (file_name, file_bytes, "image/jpeg")}
+            res = requests.post(f"{API_URL}/analyze_prescription", files=files, timeout=20)
+            if res.status_code == 200:
+                return True, res.json(), None
+        except Exception:
+            pass
+
+    # In-process standalone execution
+    try:
+        from prescription.analyzer import analyze_prescription_content
+        data = analyze_prescription_content(file_bytes, file_name)
+        return True, data, None
+    except Exception as e:
+        return False, {}, f"Prescription Analysis Error: {str(e)}"
+
 def parse_mimic_csv(file_name: str, file_bytes: bytes, mime_type: str) -> Tuple[bool, Dict[str, Any], Optional[str]]:
     """
     Parses MIMIC-IV CSV metadata via FastAPI or in-process.
