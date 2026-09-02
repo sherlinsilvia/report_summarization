@@ -19,24 +19,20 @@ try:
 except ImportError:
     from ui.citation.formatter import format_summary_citations_html, clean_markdown_and_format_html
 
+import importlib
 try:
-    from backend_bridge import (
-        upload_and_index_report,
-        analyze_prescription_bridge,
-        parse_mimic_csv,
-        process_mimic_selection,
-        generate_summary_bridge,
-        run_disc_bridge
-    )
+    import backend_bridge
+    importlib.reload(backend_bridge)
 except ImportError:
-    from ui.backend_bridge import (
-        upload_and_index_report,
-        analyze_prescription_bridge,
-        parse_mimic_csv,
-        process_mimic_selection,
-        generate_summary_bridge,
-        run_disc_bridge
-    )
+    from ui import backend_bridge
+    importlib.reload(backend_bridge)
+
+upload_and_index_report = backend_bridge.upload_and_index_report
+analyze_prescription_bridge = backend_bridge.analyze_prescription_bridge
+parse_mimic_csv = backend_bridge.parse_mimic_csv
+process_mimic_selection = backend_bridge.process_mimic_selection
+generate_summary_bridge = backend_bridge.generate_summary_bridge
+run_disc_bridge = backend_bridge.run_disc_bridge
 
 # API Endpoint
 API_URL = (os.getenv("FASTAPI_URL") or os.getenv("API_URL") or "http://localhost:8000").rstrip("/")
