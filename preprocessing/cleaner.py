@@ -21,8 +21,8 @@ def clean_text(text: str) -> str:
     - Removes recurring footer/header page number patterns.
     - Sanitizes special unicode characters.
     """
-    if not text:
-        return ""
+    # Remove non-printable control characters and binary artifacts
+    text = re.sub(r'[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]', '', text)
     
     # Remove page number headers/footers (e.g., "Page 1 of 5", "Page 2")
     text = re.sub(r'(?i)page\s+\d+(\s+of\s+\d+)?', '', text)
